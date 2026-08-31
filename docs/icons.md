@@ -12,6 +12,11 @@ One folder per category. Every file is a 54 × 54 PNG.
 `assets/` holds the flat 2D art: category tab icons (`bike.png`, `battery.png`,
 `IOT.png`), bottom-nav mask icons, and the cancel glyphs.
 
+Every tab in the category strip shows its icon at 32 × 32, selected or not —
+selection is carried by the underline and the darker label. `assets/workflow.png`
+is referenced but not yet exported; until it lands, the Workflow tab drops its
+image on load error and renders as a plain text tab.
+
 `Icon style/yulu-icon-style_final.json` holds the icon style definition.
 
 ## `_tab` and `_common`
@@ -55,8 +60,29 @@ The rule:
 "Report". Before ids and labels were separated they collided and shared one
 icon — the Bike tile rendered the battery art.
 
-Labels are rendered sentence-case by CSS (`::first-letter`), so the stored
-strings match the filenames exactly and never need re-casing by hand.
+## Display polish
+
+The stored strings have to match the filenames byte for byte — they're the
+lookup keys — so every cosmetic fix happens in `display()`, at the last moment
+before a name is drawn:
+
+| Rule | Example |
+|---|---|
+| Sentence case | `bike status` → "Bike status" |
+| `IOT` → `IoT` | `IOT device info` → "IoT device info" |
+| `E- bike` → `E-bike` | `E- bike battery swapping` → "E-bike battery swapping" |
+
+Search matches against both forms, so typing either `e- bike` or `e-bike` finds
+the action.
+
+Sentence case used to be a CSS rule (`.tile__label::first-letter`). That
+pseudo-element doesn't apply to the `-webkit-box` the label needs for its
+two-line clamp: Chrome blockifies the box and honoured it anyway, iOS Safari
+didn't, and every label rendered lowercase on device. Keep it in JS.
+
+`WRAP_AFTER` forces a line break in a label that would otherwise sit awkwardly.
+Only `MRE verification` uses it — at 83px against an 86px label it squeaked onto
+one line while its row-mate `Bike assessment` wrapped.
 
 ## Adding an action
 

@@ -148,6 +148,11 @@ body{
   background:var(--surface-inverse);
 }
 .appbar__title{ font-size:16px; line-height:20px; font-weight:700; color:var(--content-primary); max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+/* The Workbench title is label/medium in content/secondary — it labels the page
+   rather than announcing it, so it sits back from the content below. Carried by
+   the search screen too: the header is continuous across the two, and a title
+   that changed weight mid-transition would read as a glitch. */
+.appbar__title--workbench{ font-weight:500; color:var(--content-secondary); }
 .appbar__action{
   position:absolute; top:50%; transform:translateY(-50%);
   width:48px; height:48px; border:0; background:none; padding:12px;
@@ -246,9 +251,9 @@ body{
 @media (prefers-reduced-motion:reduce){
   .grid.is-editing .tile{ animation:none; }
 }
-/* Sentence case: capitalise the first letter only. Done in CSS so the label
-   strings stay exactly as the icon filenames — they're the lookup keys. */
-.tile__label::first-letter{ text-transform:uppercase; }
+/* Sentence case is applied in JS, not here: ::first-letter doesn't apply to
+   the -webkit-box below, and iOS Safari renders every label lowercase without
+   it. See display() in the script. */
 .tile__label{
   font-size:12px; line-height:16px; font-weight:500;
   color:var(--content-primary); text-align:center;
@@ -309,6 +314,18 @@ body{
   transition:transform .12s var(--ease);
 }
 .searchfab__btn:active{ transform:scale(.96); }
+/* Inside the collapsed sheet the pill isn't a floating layer — it's the last
+   row of the sheet's own content, 24px under the favourites. No absolute
+   placement, and no gradient scrim: there's nothing to fade out over. */
+/* 16px from the grabber bar to the title. The 26px underneath is what the
+   72px appbar gives the title on the expanded page, kept so the title sits the
+   same distance above "Favourites" in both places. */
+.sheet > .appbar{ height:auto; padding:var(--spacing-4) 4px 26px; }
+.sheet > .searchfab{
+  position:static; flex:none;
+  height:auto; padding-top:var(--spacing-6);
+  background:none;
+}
 
 /* ============================================================
    BOTTOM NAV  (100px: 16px top pad + 44px items)
@@ -364,10 +381,16 @@ body{
    favourites make a shorter sheet than nine, and an empty row never leaves
    dead space. It's anchored to the bottom edge and grows upward, capped so it
    can never climb past the point where expanding to full screen takes over. */
+/* Bottom edge sits on the nav's top edge, not on the screen's — the nav is
+   fixed furniture at the physical bottom, and the sheet is a panel that opens
+   above it. Running the sheet's white surface underneath the nav made the
+   collapsed screen read as two screens stacked. */
 .sheet{
-  position:absolute; left:0; right:0; bottom:0;
-  height:auto; max-height:668px;
-  padding-bottom:180px;                 /* clears floating search + nav */
+  position:absolute; left:0; right:0; bottom:100px;
+  /* Sized by its content, capped so a strip of the Tasks screen always shows:
+     nine favourites — the most possible — come to exactly 620px. */
+  height:auto; max-height:620px;
+  padding-bottom:var(--spacing-6);
   z-index:30;
   background:var(--canvas-primary);
   border-radius:var(--sheet-radius) var(--sheet-radius) 0 0;
@@ -377,11 +400,18 @@ body{
   display:flex; flex-direction:column;
   overflow:hidden;
 }
+/* Nothing in the sheet may shrink. Without this, a column flex container that
+   hits its cap silently squashes whichever children can give — at nine
+   favourites the section heading collapsed from 48px to 32px. */
+.sheet > *{ flex:none; }
 .sheet.is-open{ transform:translateY(0); }
 .sheet.is-dragging{ transition:none; }
-/* Grabber band, per spec: 32px tall — 8px above the bar, 20px below it. */
+/* 8px above the bar, and the band ends there. The original spec put 20px below
+   it, but that assumed content directly underneath; the Workbench title now
+   follows, and its gap is specified as 16px measured from the bar — so the
+   title carries that space itself (see .sheet > .appbar). */
 .sheet__grab{
-  height:32px; flex:none;
+  height:12px; flex:none;
   display:flex; align-items:flex-start; justify-content:center;
   padding-top:var(--spacing-2);
   cursor:grab;
@@ -400,8 +430,10 @@ body{
   cursor:pointer;
   transition:background .12s var(--ease), transform .12s var(--ease);
 }
+/* 72 × 44 hit target around a 44 × 4 bar, reaching from the sheet's top edge
+   down past the grab band into the title's empty upper margin. */
 .sheet__expand::after{
-  content:""; position:absolute; left:-14px; right:-14px; top:-8px; bottom:-20px;
+  content:""; position:absolute; left:-14px; right:-14px; top:-8px; bottom:-32px;
 }
 .sheet__expand:active{
   background:var(--content-tertiary);
@@ -453,13 +485,6 @@ body{
   display:grid; place-items:center; color:var(--content-primary); border-radius:999px;
 }
 .sectionhead__action:active{ background:var(--surface-secondary); }
-/* "Done" — section-header trailing action is a text button per the DS spec. */
-.sectionhead__action--text{
-  width:auto; height:auto; padding:12px 0; margin-right:0;
-  font-family:var(--font); font-size:16px; line-height:20px; font-weight:500;
-  color:var(--content-primary);
-}
-
 /* Scroll cue — the tab row overflows by ~48px, so fade the trailing edge to
    signal there's more. Fades out once you've scrolled to the end. */
 .tabs-wrap{ position:relative; background:var(--canvas-primary); }
@@ -696,7 +721,16 @@ body{
     <div class="sheet__grab" id="sheetGrab">
       <button class="sheet__expand" id="btnExpand" aria-label="Expand workbench"></button>
     </div>
-    <div class="grid grid--sheet" id="sheetGrid"></div>
+    <!-- Same title and section heading as the expanded page, same components,
+         so the sheet reads as the top of that page rather than a different
+         screen. No pencil here — editing belongs to the expanded page. -->
+    <div class="appbar">
+      <span class="appbar__title appbar__title--workbench">Workbench</span>
+    </div>
+    <div class="sectionhead">
+      <span class="t-heading-small">Favourites</span>
+    </div>
+    <div class="grid grid--sheet gap-head" id="sheetGrid"></div>
   </section>
 
   <!-- ══════════════ SCREEN 3 · Expanded page ══════════════ -->
@@ -711,13 +745,13 @@ body{
         </span>
       </div>
       <div class="appbar" id="expandedBar">
-        <span class="appbar__title">Workbench</span>
+        <span class="appbar__title appbar__title--workbench">Workbench</span>
       </div>
     </div>
 
     <div class="page__scroll" id="expandedScroll">
       <div class="sectionhead">
-        <span class="t-heading-small">Favourities</span>
+        <span class="t-heading-small">Favourites</span>
         <button class="sectionhead__action" id="btnEdit" aria-label="Edit favourites">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7.5 18.5 3 20l1.5-4.5L16.5 3.5Z"/></svg>
         </button>
@@ -748,7 +782,7 @@ body{
           <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="18" height="8" rx="2" fill="currentColor"/><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6Z" fill="currentColor" opacity=".4"/></svg>
         </span>
       </div>
-      <div class="appbar"><span class="appbar__title">Workbench</span></div>
+      <div class="appbar"><span class="appbar__title appbar__title--workbench">Workbench</span></div>
     </div>
 
     <div class="search__results" id="searchResults">
@@ -849,9 +883,12 @@ body{
                "battery charger","battery handshake","battery dashboard",
                "remove battery mapping","correct battery mapping","battery history",
                "Missing battery","battery self audit"] },
-    { id:"iot",      label:"IOT",      img:"assets/IOT.png",
+    { id:"iot",      label:"IoT",      img:"assets/IOT.png",
       actions:["IOT device info"] },
-    { id:"workflow", label:"Workflow", img:null,
+    /* workflow.png isn't exported yet. The path is wired up anyway — the tab
+       falls back to text if the file is missing, and picks up the art the
+       moment it lands in assets/, with no code change. */
+    { id:"workflow", label:"Workflow", img:"assets/workflow.png",
       actions:["bike assessment","MRE verification"] }
   ];
 
@@ -883,6 +920,24 @@ body{
   };
   const labelOf = id => LABEL[id] || id;
 
+  /* Display-only text polish, applied at the last moment before a name is
+     drawn. The stored strings are icon filenames and search keys, so they
+     can't be corrected at the source — "IOT device info" has to keep matching
+     IOT device info.png.
+
+     Sentence case used to live in CSS as .tile__label::first-letter, but that
+     pseudo-element doesn't apply to the -webkit-box the label needs for its
+     two-line clamp. Chrome blockifies that box and honoured the rule anyway;
+     iOS Safari doesn't, so every label rendered lowercase on device. */
+  const SPELLING = [
+    [/\bIOT\b/g,        "IoT"],
+    [/\bE-\s+bike\b/gi, "E-bike"]
+  ];
+  function display(s) {
+    const t = SPELLING.reduce((acc, [re, to]) => acc.replace(re, to), s);
+    return t.charAt(0).toUpperCase() + t.slice(1);
+  }
+
   const CATALOGUE = (() => {
     const seen = new Map();
     const add = (id, cat) => {
@@ -905,7 +960,9 @@ body{
   const expandedScroll= $("expandedScroll");
   const favGrid       = $("favGrid");
   const catTabs       = $("catTabs");
+  const tabsWrap      = $("tabsWrap");
   const catGrid       = $("catGrid");
+  const pageHead      = pageExpanded.querySelector(".page__head");
   const pageSearch    = $("pageSearch");
   const searchGrid    = $("searchGrid");
   const searchLabel   = $("searchLabel");
@@ -974,6 +1031,19 @@ body{
     "MRE verification":            {                                          common:W+"mreverification_common.png" }
   };
 
+  /* Forced line breaks. "MRE verification" measures 83px against an 86px label,
+     so it squeaks onto one line while its row-mate "Bike assessment" wraps —
+     the row reads lopsided. Break it by hand rather than narrowing every label
+     in the app to chase three pixels. Key is the displayed name; value is the
+     text that ends the first line. */
+  const WRAP_AFTER = { "MRE verification": "MRE" };
+  function wrapped(name) {
+    const head = WRAP_AFTER[name];
+    return head && name.startsWith(head + " ")
+      ? `${head}<br>${name.slice(head.length + 1)}`
+      : name;
+  }
+
   function artFor(label, variant) {
     const a = ART[label];
     if (!a) return null;
@@ -999,10 +1069,10 @@ body{
        better ("Status"). Out in Favourites there's no such context, so the
        action reverts to its full name ("Bike status") — same switch that
        takes the icon from its _tab art to its _common art. */
-    const name = opts.variant === "common" ? id : labelOf(id);
+    const name = display(opts.variant === "common" ? id : labelOf(id));
     b.innerHTML =
       `<span class="tile__icon">${art}${opts.badge ? BADGE[opts.badge] : ""}</span>
-       <span class="tile__label">${name}</span>`;
+       <span class="tile__label">${wrapped(name)}</span>`;
     b.addEventListener("click", opts.onClick || (() => toast(`${name} — screen not built yet`)));
     return b;
   }
@@ -1072,44 +1142,89 @@ body{
      Measured in device px — the whole prototype is drawn at a scale factor. */
   function syncSheetTop() {
     const h = sheet.getBoundingClientRect().height / deviceScale();
-    device.style.setProperty("--sheet-top", Math.round(844 - h) + "px");
+    /* Read the sheet's own bottom offset rather than repeating the nav height —
+       move the sheet in CSS and the expand animation follows. */
+    const bottom = parseFloat(getComputedStyle(sheet).bottom) || 0;
+    device.style.setProperty("--sheet-top", Math.round(844 - bottom - h) + "px");
   }
+
+  /* One Search pill, two homes: the last row inside the collapsed sheet, and a
+     floating layer over the expanded page. Moving the node rather than cloning
+     it keeps a single button, so the pill → field morph still measures the rect
+     of whichever one is on screen. */
+  function placeSearchFab(next) {
+    if (next !== "sheet" && next !== "expanded") return;   /* hidden anyway */
+    const host = next === "expanded" ? device : sheet;
+    if (searchFab.parentNode === host) return;
+    if (host === sheet) sheet.append(searchFab);
+    else device.insertBefore(searchFab, bottomNav);
+    syncSheetTop();                        /* the sheet just changed height */
+  }
+  placeSearchFab("sheet");                 /* the collapsed sheet is its home */
 
   function renderCat() {
     const full = favourites.length >= MAX_FAVOURITES;
     catGrid.replaceChildren(...CATEGORIES[activeCat].actions.map(l => {
       if (!editing) return tile(l);
-      if (favourites.includes(l)) return tile(l, { onClick: () => toast(`${l} is already a favourite`) });
+      if (favourites.includes(l)) return tile(l, { onClick: () => toast(`${display(l)} is already a favourite`) });
       if (full) return tile(l, { onClick: () => toast(`Favourites are full — remove one first`) });
       return tile(l, { badge:"plus", onClick: () => addFavourite(l) });
     }));
     catGrid.classList.toggle("is-editing", editing);
+    padCatGrid();
+  }
+
+  /* Keep the tab strip pinnable whatever category is showing. IoT has one
+     action, so switching to it from the bottom of Bike used to shrink the page
+     below its own scroll offset — the browser clamps scrollTop and the sticky
+     strip slides back down the screen. Growing the short category's grid until
+     the scroll can still reach the strip's sticky position fixes it at the
+     source, rather than trying to restore scrollTop afterwards.
+
+     The tabs stick at top:0, so the content below them has to be at least a
+     scrollport tall, less the strip itself. Measured, not hardcoded: the
+     scrollport's own height is used rather than clientHeight, which is short
+     while the page sits collapsed behind the sheet. */
+  function padCatGrid() {
+    /* Dropping the padding to measure the natural height collapses the page,
+       and the browser clamps scrollTop on the spot — restoring the height
+       afterwards doesn't bring the scroll back. Put it back by hand. */
+    const keep = expandedScroll.scrollTop;
+    catGrid.style.minHeight = "0px";
+    const port  = 844 - pageHead.offsetHeight;
+    const below = expandedScroll.scrollHeight - (tabsWrap.offsetTop + tabsWrap.offsetHeight);
+    const grow  = (port - tabsWrap.offsetHeight) - below;
+    if (grow > 0) catGrid.style.minHeight = Math.ceil(catGrid.offsetHeight + grow) + "px";
+    expandedScroll.scrollTop = keep;
   }
 
   function addFavourite(label) {
-    if (favourites.includes(label)) { toast(`${label} is already in favourites`); return; }
+    if (favourites.includes(label)) { toast(`${display(label)} is already in favourites`); return; }
     if (favourites.length >= MAX_FAVOURITES) { toast("Favourites are full — remove one first"); return; }
     favourites.push(label);
     renderFavourites();
     renderCat();
-    toast(`${label} added to favourites`);
+    toast(`${display(label)} added to favourites`);
   }
 
   function removeFavourite(label) {
     favourites = favourites.filter(l => l !== label);
     renderFavourites();
     renderCat();
-    toast(`${label} removed`);
+    toast(`${display(label)} removed`);
   }
 
   const PENCIL_ICON =
     `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7.5 18.5 3 20l1.5-4.5L16.5 3.5Z"/></svg>`;
+  /* Heavier stroke than the pencil: a bare tick has far less ink than an
+     outlined shape, so matching stroke widths would make it read lighter. */
+  const CHECK_ICON =
+    `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m4.5 12.5 5 5 10-11"/></svg>`;
 
   function setEditing(on) {
     editing = on;
-    const btn = document.querySelector(".sectionhead__action");
-    btn.classList.toggle("sectionhead__action--text", on);
-    btn.innerHTML = on ? "Done" : PENCIL_ICON;
+    const btn = $("btnEdit");     /* the sheet has a sectionhead too now */
+    btn.innerHTML = on ? CHECK_ICON : PENCIL_ICON;
     btn.setAttribute("aria-label", on ? "Done editing favourites" : "Edit favourites");
     renderFavourites();
     renderCat();
@@ -1151,17 +1266,25 @@ body{
 
   /* Category tabs */
   let activeCat = 0;
-  /* The icon shows on the selected tab only — unselected tabs are text. */
+  /* Every tab carries its icon, selected or not — the underline and the
+     darker label carry the selected state on their own. */
   function renderTabs() {
     catTabs.replaceChildren(...CATEGORIES.map((c, i) => {
       const b = document.createElement("button");
       b.className = "tab";
       b.type = "button";
       b.setAttribute("aria-selected", String(i === activeCat));
-      const icon = (i === activeCat && c.img)
-        ? `<img class="tab__icon" src="${c.img}" alt="">`
-        : "";
-      b.innerHTML = `${icon}${c.label}`;
+      if (c.img) {
+        const img = document.createElement("img");
+        img.className = "tab__icon";
+        img.src = c.img;
+        img.alt = "";
+        /* A category whose art hasn't been exported yet degrades to a plain
+           text tab rather than showing a broken-image glyph. */
+        img.addEventListener("error", () => img.remove());
+        b.append(img);
+      }
+      b.append(c.label);
       b.addEventListener("click", () => selectCat(i));
       return b;
     }));
@@ -1180,9 +1303,15 @@ body{
   })();
 
   function selectCat(i) {
+    /* Rebuilding the strip and the grid each momentarily shrink the page, and
+       the browser clamps scrollTop on the spot. Hold the scroll across the
+       whole swap, or picking a shorter category drops the sticky strip back
+       down the screen. */
+    const keep = expandedScroll.scrollTop;
     activeCat = i;
     renderTabs();
     renderCat();
+    expandedScroll.scrollTop = keep;
     catTabs.children[i].scrollIntoView({ behavior:"smooth", block:"nearest", inline:"nearest" });
   }
   $("btnEdit").addEventListener("click", () => setEditing(!editing));
@@ -1209,6 +1338,12 @@ body{
 
     bottomNav.hidden = next === "search";
     searchFab.hidden = !(next === "sheet" || next === "expanded");
+    placeSearchFab(next);
+    /* Unconditional: placeSearchFab only re-measures when it actually moves the
+       pill, so on a plain tasks → sheet trip --sheet-top would keep whatever
+       value it had before the pill was in the sheet, and the expand animation
+       would start 72px too low. */
+    syncSheetTop();
 
     const activeNav = next === "tasks" ? "tasks" : "workbench";
     document.querySelectorAll(".navitem").forEach(n => {
@@ -1301,7 +1436,11 @@ body{
       removeEmpty();
       return;
     }
-    const hits = CATALOGUE.filter(a => a.id.toLowerCase().includes(term)).slice(0, 12);
+    /* Match the stored id and its displayed form, so both "e- bike" and the
+       "E-bike" people actually see on screen find the same action. */
+    const hits = CATALOGUE.filter(a =>
+      a.id.toLowerCase().includes(term) ||
+      display(a.id).toLowerCase().includes(term)).slice(0, 12);
     removeEmpty();
     if (!hits.length) {
       searchLabel.hidden = true;

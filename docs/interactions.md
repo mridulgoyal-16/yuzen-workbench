@@ -17,43 +17,106 @@ and its corners stay continuous the whole way.
 | Sheet | Tap the grabber, or drag up past 48px | Expanded |
 | Sheet | Drag down past 28% of sheet height | Tasks |
 | Sheet | Tap outside (scrim) | Tasks |
-| Sheet / Expanded | Tap the floating **Search** pill | Search |
+| Sheet / Expanded | Tap the **Search** pill | Search |
 | Expanded | Drag the header down past 40px | Sheet |
 | Search | Tap **✕**, or **done** on the keyboard | See [Search](#search) |
 | Any workbench view | Tap **Tasks** in the nav | Tasks |
 
-The bottom nav hides in search — the keyboard takes that space. The floating
-Search pill shows only in `sheet` and `expanded`.
+The bottom nav hides in search — the keyboard takes that space. The Search pill
+shows only in `sheet` and `expanded`.
 
-## Bottom sheet
+## Collapsed screen
 
-Anchored to the bottom edge and **sized by its content**, capped at 668px:
+Four bands, bottom-anchored, nothing below the last one:
+
+```
+Tasks content          ← stationary, dimmed by the scrim
+Workbench sheet        ← overlays the tasks, never pushes them up
+Bottom nav             ← fixed at the physical bottom, 100px
+Home indicator         ← inside the nav's band, 8px off the edge
+```
+
+### Bottom sheet
+
+Its bottom edge sits on the **nav's top edge**, not the screen's. Running the
+white surface underneath the nav made the collapsed screen read as two screens
+stacked — favourites on one, search and nav on another.
+
+Everything Workbench-y lives inside the sheet, in this order:
+
+1. Grabber
+2. **Workbench** title
+3. **Favourites** heading
+4. The favourites themselves
+5. **Search** pill
+
+The title and heading are the same components the expanded page uses, at the
+same sizes, so the sheet reads as the top of that page rather than a different
+screen. The heading carries no pencil — editing belongs to the expanded page.
+
+**Sized by its content**, capped at 620px. Fixed chrome is 242px — 8px above
+the grabber bar, the 4px bar, 16px from the bar to the title, the 20px title,
+26px under it, the 48px heading, 24 above the icons, 24 below them, the 48px
+pill, 24 to the sheet's bottom edge — plus 102px per row of favourites and 36px
+between rows:
 
 | Favourites | Sheet height |
 |---|---|
-| 1–3 (one row) | 314px |
-| 4–6 (two rows) | 452px |
-| 7–9 (three rows) | 590px |
+| 1–3 (one row) | 344px |
+| 4–6 (two rows) | 482px |
+| 7–9 (three rows) | 620px |
 
-The sheet reserves 180px at the bottom so the floating Search pill and the
-bottom nav both sit over its white surface.
+Nine favourites is the most possible, so the cap never actually bites — it's a
+guard. Every child is `flex: none`: a column flex container that hits its cap
+otherwise squashes whichever children can give, and the heading silently
+collapsed from 48px to 32px at nine favourites before that was pinned.
+
+### Search pill
+
+One button with two homes. Inside the collapsed sheet it's the last row of the
+sheet's own content — static, no gradient scrim. On the expanded page it floats
+over the scroll with its scrim, 164px off the bottom. The node is *moved*
+between the two rather than duplicated, so the pill → field morph keeps
+measuring a single live element.
 
 ### Grabber
 
-A 44 × 4 rounded rectangle in `border/primary`, centred in a 32px band —
-8px above it, 20px below. Tapping expands; a transparent hit area stretches the
-tap target across the whole band. Dragging from the band moves the sheet:
+A 44 × 4 rounded rectangle in `border/primary`, 8px below the sheet's top edge
+and 16px above the Workbench title. Tapping expands. The bar carries a transparent
+**72 × 44** hit target, reaching from the sheet's top edge down past the band
+into the title's empty upper margin. Dragging from the band moves the sheet:
 rubber-banded upward (capped at 140px, damped to 55%), free downward.
 
 ## Expanded page
 
 - **Favourites** section — up to nine tiles, with a pencil action in the header
-- **Categories** — a sticky tab strip (Bike · Battery · IOT · Workflow), then
+- Page title **Workbench** — label/medium in `content/secondary`, carried
+  through to the search screen so the header doesn't shift
+- **Categories** — a sticky tab strip (Bike · Battery · IoT · Workflow), then
   that category's actions
 - 24px between a section heading and its content; 36px between rows
 - Scrolling to the bottom leaves room for the floating pill
 
-Tabs scroll horizontally, and selecting one scrolls it into view.
+Every tab shows its 32 × 32 icon, selected or not; selection reads from the
+underline and the darker label. Four tabs with icons overflow the 390px screen,
+so the strip scrolls horizontally and selecting a tab scrolls it into view.
+
+### Keeping the strip pinned
+
+`position: sticky` only holds while the page stays tall enough to remain
+scrolled that far. IoT has one action, so switching to it from the bottom of
+Bike shrank the page below its own scroll offset — the browser clamps
+`scrollTop` and the strip slides back down the screen mid-read.
+
+Two things hold it still:
+
+- A short category's grid grows a `min-height`, so the content below the strip
+  is always at least a scrollport tall, less the strip itself. Measured against
+  the page's full height rather than `clientHeight`, which is short while the
+  page sits collapsed behind the sheet.
+- `scrollTop` is held across the whole swap. Rebuilding the strip and the grid
+  each momentarily shrink the page and the browser clamps on the spot;
+  restoring the height afterwards doesn't bring the scroll back.
 
 ## Search
 
@@ -96,7 +159,8 @@ Lives on the expanded page only; leaving that page exits it.
 
 - Enter via the pencil in the Favourites header, or by tapping a dashed **+**
   slot (from the sheet, that jumps to the expanded page and opens edit mode)
-- The pencil becomes a **Done** text button
+- The pencil becomes a **tick**. Both are 24px icons in the same 48px slot, so
+  the header doesn't reflow on the swap the way a text button made it
 - All tiles wiggle, iOS-style
 - Each favourite gets a **−** badge; tapping removes it
 - Each catalogue action gets a **+** badge; tapping adds it to favourites
