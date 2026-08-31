@@ -1,0 +1,87 @@
+# Icon system
+
+## Folders
+
+```
+3d icons/
+  bike/       battery/      IOT/      workflow/
+```
+
+One folder per category. Every file is a 54 × 54 PNG.
+
+`assets/` holds the flat 2D art: category tab icons (`bike.png`, `battery.png`,
+`IOT.png`), bottom-nav mask icons, and the cancel glyphs.
+
+`Icon style/yulu-icon-style_final.json` holds the icon style definition.
+
+## `_tab` and `_common`
+
+Each action can have two variants:
+
+| Suffix | Used where |
+|---|---|
+| `_tab` | Inside a category tab |
+| `_common` | Favourites, search results |
+
+If only one file exists it serves both places. Most actions ship `_common` only;
+`_tab` art exists where the two contexts want visibly different treatment.
+
+A file with no suffix at all (e.g. `IOT device info.png`) also serves both.
+
+## id vs label
+
+Every action has two strings, and they are deliberately different:
+
+- **id** — the icon filename stem. Globally unique. This is the lookup key.
+- **label** — what the tile displays.
+
+The rule:
+
+> Inside a category tab the category is implied, so the label drops the
+> qualifier. In favourites and in search there is no category context, so the
+> action reverts to its full id — and the icon switches from `_tab` to `_common`
+> on the same flag.
+
+| id | In the Bike tab | In favourites / search |
+|---|---|---|
+| `bike status` | Status | Bike status |
+| `report bike` | Report | Report bike |
+| `bike device swapping` | Device swapping | Bike device swapping |
+| `battery status` | Status | Battery status |
+| `report battery` | Report | Report battery |
+| `remove battery mapping` | Remove mapping | Remove battery mapping |
+
+**Why ids must stay unique:** Bike and Battery both have a "Status" and a
+"Report". Before ids and labels were separated they collided and shared one
+icon — the Bike tile rendered the battery art.
+
+Labels are rendered sentence-case by CSS (`::first-letter`), so the stored
+strings match the filenames exactly and never need re-casing by hand.
+
+## Adding an action
+
+1. Export the art into the right category folder. Name the file after the
+   action, adding `_common` (and `_tab` if the tab needs different art).
+2. Add the id to that category's `actions` array in `index.html`.
+3. Add an `ART` entry pointing at the file(s).
+4. If the tab should show a shorter label, add a `LABEL[id]` entry. Skip it and
+   the full id is used in both places.
+
+Two rules to keep:
+
+- **Never let two actions share an id.** It is the icon key.
+- **Name the id after the file**, not after the display text.
+
+## Known quirks
+
+Filenames are taken verbatim from the export, typos included, so the code maps
+around them rather than renaming:
+
+| Action | File |
+|---|---|
+| Deploy battery on bike | `Deploy batterty_common.png` |
+| Battery handshake (common) | `battery handhake_common.png` |
+| MRE verification | `mreverification_common.png` |
+
+`Bike device info_tab.png` is exported at 334 × 36 rather than square, so it's
+skipped — the `_common` art covers both places until it's re-exported.

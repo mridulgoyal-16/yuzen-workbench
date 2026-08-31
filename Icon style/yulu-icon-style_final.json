@@ -1,0 +1,193 @@
+{
+  "version": "1.0",
+  "style_name": "Yulu 3D Icon System",
+  "derived_from": "airbnb icon style json",
+  "consumer": "ChatGPT image generation",
+  "how_to_use": "Supply one `description` per icon. Every other field is fixed across the whole set and must not vary between generations.",
+
+  "icon_request": {
+    "_instructions": "Fill in `description` below. This is the only field you change per icon — everything else in this file stays fixed. Name the objects, how they are arranged, and anything optional you want (a logo, a base plate, an isometric view). Do not give the icon a title or subject name. See `examples` at the bottom of this file for the expected phrasing.",
+    "description": "",
+    "complexity": "object_plus_accessory"
+  },
+
+  "output": {
+    "aspect": "1:1 square",
+    "background": "true alpha transparency",
+    "never": "Do not draw a checkerboard, grid, or any pattern as visible pixels. Transparency means an empty alpha channel, not a painted checker.",
+    "art_area": "object fills ~82% of frame, centered on optical mass",
+    "shadow_may_extend_into_padding": true,
+    "display_target": "50x50 px tile"
+  },
+
+  "camera": {
+    "view": "three-quarter hero angle, slightly above eye level",
+    "perspective": "mild, natural",
+    "locked_across_set": true,
+    "isometric": "only when the description explicitly asks for it",
+    "avoid": "extreme wide angle, distortion, dutch tilt, top-down"
+  },
+
+  "form": {
+    "proportions": "accurate and recognizable — objects read as themselves at a glance",
+    "surfaces": "simplified, unadorned",
+    "edges": "softened, consistent bevel radius on every part",
+    "polygon_density": "low to medium",
+    "max_distinct_parts": 7,
+    "silhouette": "clean and readable with color removed",
+    "detail_scale": "uniform across all parts and all icons",
+    "avoid": ["micro-textures", "surface scratches or wear", "fur or hair", "complex paneling", "seam lines", "modelled text or numerals", "UI chrome"]
+  },
+
+  "materials": {
+    "finish": "matte",
+    "roughness": 0.95,
+    "shading": "flat shaders, no image textures",
+    "reflections": "none",
+    "lightest_value_allowed": "#E8E8E8",
+    "note": "Icons sit on #FFFFFF. No part may be pure white or it will dissolve into the page. Thin light parts need a darker edge."
+  },
+
+  "lighting": {
+    "rig": "three-point, identical on every icon",
+    "key": "bright, upper front-left",
+    "fill": "soft, lower opposite side, lifts the shadow side without flattening",
+    "rim": "narrow edge highlight along top contours",
+    "environment": "flat lighting, no HDR environment map",
+    "gradients_across_form": "soft and creamy",
+    "contact_darkening": "where parts meet",
+    "avoid": ["harsh specular hits", "blown highlights", "glow halo or bloom in the air around the object"]
+  },
+
+  "shadow": {
+    "type": "soft detached ellipse below the object",
+    "renders_into": "alpha channel as semi-transparent pixels",
+    "grounded": false,
+    "note": "The object floats. The shadow implies a surface without touching one.",
+    "base_plate": "none, unless the description asks for one"
+  },
+
+  "palette": {
+    "temperature": "cool only",
+    "rule_accent_area_max_pct": 12,
+    "rule_full_chroma": "At most one full-chroma surface per icon. Everything else sits in the muted stops.",
+    "families": {
+      "neutral":      ["#E8E8E8", "#B4B8BC", "#6E7479", "#454B50", "#1C2023"],
+      "stone":        ["#DFE2E0", "#C2C7C6", "#9AA1A2", "#737B7D", "#4B5254"],
+      "yulu_cyan":    ["#C4F4FF", "#7FE3FF", "#00D1FF", "#00A9D6", "#04708C"],
+      "deep_blue":    ["#D8DEFB", "#8B9BEE", "#4A66DC", "#003DEF", "#001F73"],
+      "purple":       ["#E2DEF7", "#B4ABE6", "#8578D0", "#584CA8", "#352C6E"],
+      "cool_brown":   ["#DCD0C4", "#B9A491", "#8E7663", "#63503F", "#3D3128"],
+      "sage":         ["#D8E8E5", "#A2C9C0", "#6BA398", "#3E7770", "#00684E"],
+      "muted_ochre":  ["#F7E3B8", "#EBCB84", "#D9AE45", "#B08A28", "#6F5619"],
+      "signal_red":   ["#F2CFCB", "#DE8B80", "#C9483A", "#D22200", "#7A1A0F"]
+    },
+    "roles": {
+      "primary": "#454B50",
+      "secondary": "#9AA1A2",
+      "accent": "#00D1FF",
+      "accent_deep": "#003DEF",
+      "stone": "#B4B8BC",
+      "metal_grey": "#6E7479",
+      "cool_neutral": "#8B9BEE",
+      "foliage": "#6BA398",
+      "wood": "#8E7663",
+      "violet": "#8578D0",
+      "signal_positive": "#3E7770",
+      "signal_negative": "#D22200",
+      "signal_caution": "#D9AE45"
+    },
+    "gradients": {
+      "direction": "vertical, lighter at top, matching the key light",
+      "both_ends_opaque": true,
+      "cyan": ["#7FE3FF", "#00A9D6"],
+      "deep_blue": ["#4A66DC", "#001F73"],
+      "purple": ["#B4ABE6", "#584CA8"],
+      "cool_brown": ["#B9A491", "#63503F"],
+      "sage": ["#A2C9C0", "#3E7770"],
+      "ochre": ["#EBCB84", "#B08A28"],
+      "charcoal": ["#454B50", "#1C2023"],
+      "light": ["#E8E8E8", "#C0C0C0"]
+    }
+  },
+
+  "kit": {
+    "note": "Recurring objects. When a description names one, build this structure. Shared parts keep the same size and proportion in every icon they appear in.",
+    "yulu_bike": {
+      "type": "step-through electric scooter",
+      "structure": "low step-through frame with a flat footboard; a single rounded saddle; upright handlebar with grips, a small rectangular display pod at the center, and a slim headlight below; exposed coil spring on the front fork; two small deep-tread wheels with plain solid dark rims; a shaped fairing panel wrapping the front column and the body beneath the saddle",
+      "colors": "body, wheels and handlebar in charcoal; fairing panel is a color slot set by the description"
+    },
+    "yuma_battery": {
+      "type": "swappable battery pack",
+      "structure": "upright rectangular slab, taller than wide, softly beveled; a recessed rectangular carry handle cut through the top; plain flat faces",
+      "colors": "charcoal shell; an optional lightning-bolt symbol on the front face is a state slot set by the description"
+    },
+    "yulu_warehouse": {
+      "type": "small service building",
+      "structure": "simple box with a pitched roof and prominent roof trim; a wide roller shutter across the front, open or closed; a solid skirting band around the base",
+      "omit": ["wall vents", "vertical siding lines", "panel seams"]
+    },
+    "yuma_charging_station": {
+      "type": "floor-standing battery swap cabinet",
+      "structure": "wedge-shaped cabinet, front face angled back toward the top; a grid of about six battery bays (two rows of three) set into the front; a small display panel above the bays; casters at the base",
+      "note": "Six bays maximum. More becomes texture rather than shape."
+    },
+    "battery_shelf": {
+      "type": "storage rack for battery packs",
+      "structure": "painted steel frame, three shelves, about four slots per shelf divided by vertical partitions; battery packs standing upright in the slots"
+    },
+    "yulu_logo": {
+      "form": "leaf-and-arc mark only, never the wordmark",
+      "treatment": "extruded with real depth when the description calls for a symbol",
+      "color": "#2FCDFD",
+      "exempt_from_palette": true
+    },
+    "yuma_logo": {
+      "form": "Y mark with two dots, mark only, never the wordmark",
+      "treatment": "extruded with real depth when the description calls for a symbol",
+      "colors": ["#003CE6", "#38BFF6", "#B8C9D6"],
+      "exempt_from_palette": true
+    }
+  },
+
+  "brand_routing": {
+    "yulu": "bikes, warehouses, zones",
+    "yuma": "batteries, charging stations, swap hardware",
+    "mixed_icons": "the mark follows the object it sits on, not the icon overall",
+    "appears_only_when": "the description explicitly asks for a logo"
+  },
+
+  "constraints": {
+    "do_not": [
+      "photoreal rendering",
+      "glossy or reflective surfaces",
+      "harsh highlights",
+      "perspective distortion",
+      "busy backgrounds",
+      "text, labels, wordmarks or numerals",
+      "warm or hot color casts",
+      "more than one full-chroma surface per icon",
+      "base plates unless requested",
+      "isometric projection unless requested"
+    ],
+    "always": [
+      "true alpha background",
+      "same camera angle and light rig on every icon",
+      "matte, softly beveled, low-detail forms",
+      "cool palette only",
+      "silhouette readable at 50 px"
+    ]
+  },
+
+  "examples": [
+    {
+      "complexity": "object_plus_accessory",
+      "description": "A yulu bike seen from the front three-quarter, with a yuma battery standing upright on the footboard. The bike's fairing panel is cyan. The battery carries a sage green lightning bolt."
+    },
+    {
+      "complexity": "compact_scene",
+      "description": "A yulu warehouse with its roller shutter raised, and a battery shelf visible just inside holding four yuma batteries. An extruded yulu logo sits on the wall above the shutter. Roof and skirting in cyan, walls in stone."
+    }
+  ]
+}

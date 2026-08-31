@@ -1,0 +1,1575 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yulu · Workbench flow</title>
+<link rel="preconnect" href="https://api.fontshare.com" crossorigin>
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@500,700&display=swap">
+<style>
+/* ============================================================
+   CORE TOKENS  —  yulu-design-system / tokens/color-variables.md
+   ============================================================ */
+:root{
+  --color-white:#FFFFFF;
+  --color-grey-100:#F7F7F7;
+  --color-grey-200:#E8E8E8;
+  --color-grey-300:#DDDDDD;
+  --color-grey-400:#B0B0B0;
+  --color-grey-500:#919191;
+  --color-grey-600:#717171;
+  --color-grey-900:#222222;
+  --color-black:#000000;
+  --color-green-500:#00654F;
+  --color-orange-500:#E07912;
+  --color-red-500:#C13515;
+  --color-yulu-blue-500:#30CDFD;
+
+  /* Semantic — content */
+  --content-primary:var(--color-grey-900);
+  --content-secondary:var(--color-grey-600);
+  --content-tertiary:var(--color-grey-500);
+  --content-disabled:var(--color-grey-400);
+  --content-inverse:var(--color-white);
+  --content-positive:var(--color-green-500);
+
+  /* Semantic — surface */
+  --surface-primary:var(--color-grey-900);
+  --surface-secondary:var(--color-grey-100);
+  --surface-disabled:var(--color-grey-300);
+  --surface-inverse:var(--color-white);
+
+  /* Semantic — border */
+  --border-primary:var(--color-grey-200);
+  --border-secondary:var(--color-grey-400);
+  --border-selected:var(--color-grey-900);
+
+  /* Semantic — canvas */
+  --canvas-primary:var(--color-white);
+  --canvas-inverse:var(--color-grey-900);
+
+  /* Spacing scale (tokens/spacing.md) */
+  --spacing-1:4px;  --spacing-2:8px;   --spacing-4:16px; --spacing-6:24px;
+  --spacing-9:36px; --spacing-12:48px; --spacing-16:64px;
+
+  /* Type */
+  --font:"Satoshi","Satoshi Variable",-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+
+  /* Prototype-only */
+  --sheet-radius:24px;
+  --ease:cubic-bezier(.32,.72,0,1);
+  --morph:.34s;                        /* pill → search field */
+}
+
+/* Typography roles — tokens/typography.md */
+.t-heading-small { font-size:20px; line-height:28px; font-weight:700; }
+.t-label-md700   { font-size:16px; line-height:20px; font-weight:700; }
+.t-label-md      { font-size:16px; line-height:20px; font-weight:500; }
+.t-label-sm      { font-size:14px; line-height:16px; font-weight:500; }
+.t-label-xs      { font-size:12px; line-height:16px; font-weight:500; }
+.t-body-md       { font-size:16px; line-height:24px; font-weight:500; }
+.t-body-sm       { font-size:14px; line-height:20px; font-weight:500; }
+
+/* ============================================================
+   STAGE
+   ============================================================ */
+*,*::before,*::after{ box-sizing:border-box; }
+[hidden]{ display:none !important; }
+html{ height:100%; }
+body{
+  margin:0; min-height:100%;
+  font-family:var(--font);
+  background:#EDEDEF;
+  color:var(--content-primary);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:12px; padding:16px;
+  -webkit-font-smoothing:antialiased;
+}
+.stage-title{ font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--content-secondary); flex:none; }
+.stage-hint{ font-size:13px; line-height:18px; font-weight:500; color:var(--content-secondary); text-align:center; max-width:420px; flex:none; margin:0; }
+.stage-hint b{ color:var(--content-primary); font-weight:700; }
+
+/* The phone is a fixed 390×844. Rather than let a short window clip it,
+   scale it down to whatever fits — --scale is set by fitDevice() on resize. */
+:root{ --scale:1; }
+.frame{
+  position:relative; flex:none;
+  width:calc(390px * var(--scale));
+  height:calc(844px * var(--scale));
+}
+.device{
+  position:absolute; top:0; left:0;
+  transform:scale(var(--scale));
+  transform-origin:top left;
+  width:390px; height:844px;
+  background:var(--canvas-primary);
+  border-radius:44px;
+  box-shadow:0 0 0 10px #1b1b1e, 0 24px 60px rgba(0,0,0,.28);
+  overflow:hidden;
+  isolation:isolate;
+  touch-action:none;
+  user-select:none;
+}
+
+/* ============================================================
+   PRIMITIVES
+   ============================================================ */
+.icon-mask{
+  display:block;
+  background-color:currentColor;
+  -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
+  -webkit-mask-position:center;  mask-position:center;
+  -webkit-mask-size:contain;     mask-size:contain;
+}
+
+/* Status bar (iPhone-status-bar(upper) — 390×44) */
+.statusbar{
+  height:44px; flex:none;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 22px 0 27px;
+  font-size:15px; font-weight:700; letter-spacing:-.02em;
+}
+.statusbar .glyphs{ display:flex; align-items:center; gap:6px; }
+
+/* Top App Bar — components/top-app-bar (72px, title Label/Medium700) */
+.appbar{
+  height:72px; flex:none;
+  display:flex; align-items:center; justify-content:center;
+  padding:10px 4px; position:relative;
+  background:var(--surface-inverse);
+}
+.appbar__title{ font-size:16px; line-height:20px; font-weight:700; color:var(--content-primary); max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.appbar__action{
+  position:absolute; top:50%; transform:translateY(-50%);
+  width:48px; height:48px; border:0; background:none; padding:12px;
+  display:grid; place-items:center; cursor:pointer; color:var(--content-primary);
+}
+.appbar__action--trailing{ right:4px; }
+
+/* Icon button (round action tile) */
+.iconbtn{
+  border:0; padding:0; cursor:pointer;
+  border-radius:999px;
+  background:var(--surface-secondary);
+  color:var(--content-primary);
+  display:grid; place-items:center;
+  transition:transform .12s var(--ease), background .12s linear;
+}
+.iconbtn:active{ transform:scale(.93); background:var(--color-grey-200); }
+
+/* Divider — components/divider (1px, border/primary) */
+.divider{ height:1px; background:var(--border-primary); flex:none; }
+
+/* ============================================================
+   ACTION GRID  (3 columns, cells hug, 8px gutters)
+   ============================================================ */
+/* One grid everywhere — sheet and full page share identical metrics so the
+   expand animation doesn't re-lay-out its contents mid-motion.
+   90px tiles evenly distributed (36px gutters), 36px rows, 48px icons. */
+.grid{
+  display:grid;
+  padding:0 var(--spacing-6);                    /* 342px content area */
+  grid-template-columns:repeat(3,90px);
+  justify-content:space-between;
+  row-gap:var(--spacing-9);
+}
+
+.tile{
+  border:0; background:none; padding:0; cursor:pointer;
+  display:flex; flex-direction:column; align-items:center;
+  gap:var(--spacing-4);
+  color:var(--content-primary);
+}
+/* 54px slot. A 3D icon fills it outright — no circle behind. Actions with no
+   art yet keep the 48px placeholder circle, centred in the same slot so rows
+   stay level when a grid mixes the two. */
+.tile__icon{
+  position:relative; flex:none;
+  width:54px; height:54px;
+  display:grid; place-items:center;
+  transition:transform .12s var(--ease);
+}
+.tile__art{ width:54px; height:54px; display:block; object-fit:contain; }
+.tile__ph{
+  width:48px; height:48px; border-radius:999px;
+  background:var(--surface-secondary);
+  display:grid; place-items:center;
+  transition:background .12s linear;
+}
+.tile__icon .icon-mask{ width:24px; height:24px; }
+.tile:active .tile__icon{ transform:scale(.93); }
+.tile:active .tile__ph{ background:var(--color-grey-200); }
+
+/* ---- Edit mode: iOS-style wiggle + add/remove badges ---- */
+.tile__badge{
+  position:absolute; top:-2px; right:-2px;
+  width:22px; height:22px; border-radius:999px;
+  /* Grey500 direct — the DS has no semantic surface token for this fill. */
+  background:var(--color-grey-500); color:var(--content-inverse);
+  display:grid; place-items:center;
+}
+/* Empty favourite slot — pads a partial row out to 3 and doubles as the way
+   into edit mode. Top-aligned so it lines up with the icons beside it. */
+.slot{
+  position:relative;
+  width:90px; height:90px; align-self:start;
+  padding:0; cursor:pointer;
+  border:0; border-radius:16px; background:none;
+  color:var(--content-disabled);
+  display:grid; place-items:center;
+  transition:color .12s linear;
+}
+/* Drawn rather than `border:dashed`, which gives no control over dash length.
+   stroke-dasharray "8 8" = 8px dash, 8px gap. */
+.slot__frame{
+  position:absolute; inset:0;
+  color:var(--border-primary);
+  transition:color .12s linear;
+}
+.slot:active{ color:var(--content-secondary); }
+.slot:active .slot__frame{ color:var(--border-secondary); }
+
+@keyframes tile-wiggle-a{ 0%,100%{ transform:rotate(-1.1deg); } 50%{ transform:rotate(1.1deg); } }
+@keyframes tile-wiggle-b{ 0%,100%{ transform:rotate(1.1deg); } 50%{ transform:rotate(-1.1deg); } }
+.grid.is-editing .tile{ animation:tile-wiggle-a .27s ease-in-out infinite; }
+.grid.is-editing .tile:nth-child(even){ animation-name:tile-wiggle-b; animation-duration:.31s; }
+.grid.is-editing .tile:nth-child(3n){ animation-duration:.29s; }
+@media (prefers-reduced-motion:reduce){
+  .grid.is-editing .tile{ animation:none; }
+}
+/* Sentence case: capitalise the first letter only. Done in CSS so the label
+   strings stay exactly as the icon filenames — they're the lookup keys. */
+.tile__label::first-letter{ text-transform:uppercase; }
+.tile__label{
+  font-size:12px; line-height:16px; font-weight:500;
+  color:var(--content-primary); text-align:center;
+  height:32px; width:100%;
+  display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden;
+}
+
+/* ============================================================
+   TABS — components/tabs (56px, 16px pad, 2px indicator)
+   ============================================================ */
+.tabs{
+  height:56px; flex:none;
+  display:flex; align-items:stretch;
+  overflow-x:auto; overflow-y:hidden;
+  scrollbar-width:none;
+  border-bottom:1px solid var(--border-primary);
+  background:var(--canvas-primary);
+}
+.tabs::-webkit-scrollbar{ display:none; }
+.tab{
+  border:0; background:none; cursor:pointer;
+  padding:0 var(--spacing-4);
+  display:flex; align-items:center; gap:var(--spacing-2);
+  position:relative; white-space:nowrap; flex:none;
+  font-family:var(--font); font-size:16px; line-height:24px; font-weight:500;
+  color:var(--content-secondary);
+}
+.tab__icon{ width:32px; height:32px; flex:none; object-fit:contain; }
+.tab__icon--placeholder{ border-radius:999px; background:var(--surface-disabled); }
+.tab[aria-selected="true"]{ color:var(--content-primary); }
+.tab[aria-selected="true"]::after{
+  content:""; position:absolute; left:12px; right:12px; bottom:0;
+  height:2px; border-radius:1px; background:var(--content-primary);
+}
+
+/* ============================================================
+   FLOATING SEARCH  (persistent, sits above the bottom nav)
+   ============================================================ */
+.searchfab{
+  position:absolute; left:0; right:0; bottom:100px; height:80px;
+  z-index:40;
+  display:grid; place-items:center;
+  pointer-events:none;
+  background:linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,.86) 42%, var(--canvas-primary) 100%);
+  transition:opacity .22s var(--ease), transform .28s var(--ease);
+}
+.searchfab__btn{
+  pointer-events:auto;
+  height:48px; min-width:48px; padding:0 var(--spacing-6) 0 20px;
+  border-radius:100px;
+  border:1px solid var(--border-primary);
+  background:var(--surface-inverse);
+  color:var(--content-primary);
+  font-family:var(--font); font-size:16px; line-height:20px; font-weight:500;
+  display:inline-flex; align-items:center; gap:var(--spacing-2);
+  cursor:pointer;
+  box-shadow:0 4px 16px rgba(0,0,0,.08);
+  transition:transform .12s var(--ease);
+}
+.searchfab__btn:active{ transform:scale(.96); }
+
+/* ============================================================
+   BOTTOM NAV  (100px: 16px top pad + 44px items)
+   ============================================================ */
+.bottomnav{
+  position:absolute; left:0; right:0; bottom:0; height:100px;
+  z-index:50;
+  background:var(--surface-inverse);
+  border-top:1px solid var(--border-primary);
+  padding:var(--spacing-4) var(--spacing-6) 0;
+  display:flex; align-items:flex-start;
+}
+.navitem{
+  flex:1; border:0; background:none; cursor:pointer; padding:0;
+  height:44px; display:flex; flex-direction:column; align-items:center; gap:var(--spacing-1);
+  font-family:var(--font); font-size:12px; line-height:16px; font-weight:500;
+  color:var(--content-tertiary);              /* unselected nav — per design call */
+}
+.navitem .icon-mask{ width:24px; height:24px; }
+.navitem[aria-current="page"]{ color:var(--content-primary); font-weight:700; }
+
+/* ============================================================
+   LAYERS
+   ============================================================ */
+.layer{ position:absolute; inset:0; display:flex; flex-direction:column; background:var(--canvas-primary); }
+
+/* ---- Base: Tasks screen (static image; coded version is the fallback) ---- */
+.tasks-img{
+  position:absolute; left:0; right:0; top:0; bottom:100px;
+  width:100%; height:calc(100% - 100px);
+  object-fit:cover; object-position:top center;
+  display:block;
+}
+.tasks__tabs{ padding-top:var(--spacing-6); }
+.tasklist{ flex:1; overflow:hidden; }
+.taskrow{ height:72px; padding:0 var(--spacing-6); display:flex; align-items:center; justify-content:space-between; }
+.taskrow__name{ font-size:16px; line-height:20px; font-weight:500; }
+.taskrow__batt{ display:flex; align-items:center; gap:var(--spacing-1); font-size:16px; line-height:20px; font-weight:500; color:var(--content-secondary); }
+.taskrow__batt .icon{ width:20px; height:20px; color:var(--content-secondary); }
+.tasklist .divider{ margin:0 var(--spacing-6); }
+
+/* ---- Scrim — components/overlay ---- */
+.scrim{
+  position:absolute; inset:0; z-index:20;
+  background:rgba(0,0,0,.24);
+  opacity:0; pointer-events:none;
+  transition:opacity .3s var(--ease);
+}
+.scrim.is-on{ opacity:1; pointer-events:auto; }
+
+/* ---- Bottom sheet (screen 1) ---- */
+/* The sheet is sized by its content, not pinned to a fixed top: five
+   favourites make a shorter sheet than nine, and an empty row never leaves
+   dead space. It's anchored to the bottom edge and grows upward, capped so it
+   can never climb past the point where expanding to full screen takes over. */
+.sheet{
+  position:absolute; left:0; right:0; bottom:0;
+  height:auto; max-height:668px;
+  padding-bottom:180px;                 /* clears floating search + nav */
+  z-index:30;
+  background:var(--canvas-primary);
+  border-radius:var(--sheet-radius) var(--sheet-radius) 0 0;
+  box-shadow:0 -8px 32px rgba(0,0,0,.10);
+  transform:translateY(100%);
+  transition:transform .38s var(--ease);
+  display:flex; flex-direction:column;
+  overflow:hidden;
+}
+.sheet.is-open{ transform:translateY(0); }
+.sheet.is-dragging{ transition:none; }
+/* Grabber band, per spec: 32px tall — 8px above the bar, 20px below it. */
+.sheet__grab{
+  height:32px; flex:none;
+  display:flex; align-items:flex-start; justify-content:center;
+  padding-top:var(--spacing-2);
+  cursor:grab;
+  touch-action:none;
+}
+.sheet__grab:active{ cursor:grabbing; }
+/* The affordance is a grabber bar, not a chevron — it reads as "drag me",
+   which is what the gesture on this area actually does. It stays a button so
+   a plain tap still expands: the bar is only 4px tall, so ::after stretches
+   the tap target over the whole 32px band without affecting layout. */
+.sheet__expand{
+  position:relative;
+  width:44px; height:4px; border:0; padding:0;
+  border-radius:999px;
+  background:var(--border-primary);
+  cursor:pointer;
+  transition:background .12s var(--ease), transform .12s var(--ease);
+}
+.sheet__expand::after{
+  content:""; position:absolute; left:-14px; right:-14px; top:-8px; bottom:-20px;
+}
+.sheet__expand:active{
+  background:var(--content-tertiary);
+  transform:scaleY(1.5);
+}
+
+/* ---- Expanded page (screen 3) ---- */
+.page{
+  position:absolute; inset:0; z-index:35;
+  background:var(--canvas-primary);
+  display:flex; flex-direction:column;
+  opacity:0; pointer-events:none;
+  transform:translateY(16px);
+  transition:opacity .26s var(--ease), transform .3s var(--ease);
+}
+.page.is-on{ opacity:1; pointer-events:auto; transform:none; }
+
+/* The expanded workbench is the SHEET growing, not a new page. It starts life
+   at the sheet's exact geometry (--sheet-top, measured after the favourites
+   render, and a 24px top radius) and stretches to full screen, while the sheet
+   stays put underneath so the white surface and corner radius stay continuous
+   through the whole move. */
+#pageExpanded{
+  top:var(--sheet-top, 176px); border-radius:var(--sheet-radius) var(--sheet-radius) 0 0;
+  overflow:hidden; transform:none;
+  transition:opacity .2s var(--ease),
+             top .42s var(--ease),
+             border-radius .42s var(--ease);
+}
+#pageExpanded.is-on{ top:0; border-radius:0; }
+
+.page__head{ flex:none; }
+.page__scroll{
+  flex:1; overflow-y:auto; overscroll-behavior:contain;
+  padding-bottom:180px;                 /* clears floating search + nav */
+  touch-action:pan-y;
+}
+.page__scroll::-webkit-scrollbar{ display:none; }
+.page__scroll{ scrollbar-width:none; }
+
+/* Section header — components/section-header (24px pad, Headings/Small) */
+.sectionhead{
+  height:48px; padding:0 var(--spacing-6) 0 var(--spacing-6);
+  display:flex; align-items:center; justify-content:space-between;
+}
+.sectionhead__action{
+  width:48px; height:48px; margin-right:-12px;
+  border:0; background:none; padding:12px; cursor:pointer;
+  display:grid; place-items:center; color:var(--content-primary); border-radius:999px;
+}
+.sectionhead__action:active{ background:var(--surface-secondary); }
+/* "Done" — section-header trailing action is a text button per the DS spec. */
+.sectionhead__action--text{
+  width:auto; height:auto; padding:12px 0; margin-right:0;
+  font-family:var(--font); font-size:16px; line-height:20px; font-weight:500;
+  color:var(--content-primary);
+}
+
+/* Scroll cue — the tab row overflows by ~48px, so fade the trailing edge to
+   signal there's more. Fades out once you've scrolled to the end. */
+.tabs-wrap{ position:relative; background:var(--canvas-primary); }
+.tabs-wrap::after{
+  content:""; position:absolute; right:0; top:0; bottom:1px; width:48px;
+  pointer-events:none;
+  background:linear-gradient(to right, rgba(255,255,255,0) 0%, var(--canvas-primary) 78%);
+  opacity:1; transition:opacity .2s linear;
+}
+.tabs-wrap.at-end::after{ opacity:0; }
+.tabs--sticky{ position:sticky; top:0; z-index:5; }
+
+/* Expanded-page vertical rhythm */
+.gap-head{ padding-top:var(--spacing-6); }          /* heading/tabs → content: 24px */
+.gap-actions-tabs{ height:var(--spacing-9); }       /* actions → tabs: 36px */
+
+/* ---- Search page (screen 2) ---- */
+.search__results{ flex:1; overflow-y:auto; padding-top:var(--spacing-2); }
+.search__results::-webkit-scrollbar{ display:none; }
+.search__results{ scrollbar-width:none; }
+.search__label{
+  padding:0 var(--spacing-6); margin-bottom:var(--spacing-4);
+  font-size:14px; line-height:20px; font-weight:500; color:var(--content-secondary);
+}
+.search__empty{
+  padding:var(--spacing-12) var(--spacing-6); text-align:center;
+  font-size:16px; line-height:24px; font-weight:500; color:var(--content-secondary);
+}
+/* The bar positions its children absolutely so the field can be morphed
+   from the floating Search pill's geometry without fighting flex layout. */
+.search__bar{
+  flex:none; position:relative; height:88px;
+  background:var(--canvas-primary);
+}
+.search__field{
+  position:absolute; left:24px; top:16px; width:288px; height:56px;
+  padding:0 16px 0 20px;
+  border:1px solid var(--content-primary); border-radius:100px;
+  display:flex; align-items:center; gap:12px;
+  background:var(--surface-inverse);
+  transition:left var(--morph) var(--ease),
+             top var(--morph) var(--ease),
+             width var(--morph) var(--ease),
+             height var(--morph) var(--ease),
+             border-color var(--morph) linear;
+}
+/* Clear-the-query button, inside the field. Only while there's a query. */
+.search__clear{
+  width:24px; height:24px; flex:none; padding:0;
+  border:0; background:none;
+  display:none; cursor:pointer;
+}
+.search__clear.is-on{ display:block; }
+.search__clear img{ display:block; width:100%; height:100%; }
+.search__clear:active{ opacity:.6; }
+.search__field .icon{ width:20px; height:20px; color:var(--content-secondary); flex:none; }
+.search__input{
+  flex:1; min-width:0; border:0; outline:0; background:none; padding:0;
+  font-family:var(--font); font-size:16px; line-height:24px; font-weight:500;
+  color:var(--content-primary); caret-color:var(--content-primary);
+}
+.search__input::placeholder{ color:var(--content-secondary); }
+/* Cancel — no background. Exception to the spacing scale: vertical padding
+   stays 16px so the tap target survives losing the filled circle. */
+.search__close{
+  position:absolute; right:16px; top:50%; margin-top:-27px;
+  border:0; background:none;
+  padding:16px 8px;
+  color:var(--content-primary);
+  display:grid; place-items:center; cursor:pointer;
+}
+.search__close:active{ opacity:.5; }
+.search__results{ min-height:0; }
+
+/* ============================================================
+   iOS KEYBOARD
+   ============================================================ */
+/* Search page: no slide or fade of its own — the field morph carries the
+   motion. The page flips opaque instantly so the field is never translucent;
+   its BACKGROUND and CONTENTS are what dissolve in and out around it. */
+#pageSearch{ transform:none; transition:background-color .2s linear; }
+#pageSearch .page__head,
+#pageSearch .search__results,
+#pageSearch .search__close{ transition:opacity .2s linear; }
+#pageSearch .search__bar{ transition:background-color .2s linear; }
+
+#pageSearch.is-opening,
+#pageSearch.is-opening .search__bar{ background:transparent; }
+#pageSearch.is-opening .page__head,
+#pageSearch.is-opening .search__results,
+#pageSearch.is-opening .search__close{ opacity:0; }
+#pageSearch.is-opening .search__field{ border-color:var(--border-primary); }
+#pageSearch .kb{ transform:translateY(100%); transition:transform var(--morph) var(--ease); }
+#pageSearch.is-on:not(.is-closing) .kb{ transform:none; }
+/* Closing: everything EXCEPT the field dissolves, so the field stays the one
+   continuous surface travelling back down onto the pill. The page's own white
+   background goes too — otherwise it would pop off at the end and reveal the
+   sheet underneath all at once. */
+#pageSearch.is-closing{ background:transparent; transition:background-color .22s linear; }
+#pageSearch.is-closing .search__bar{ background:transparent; }
+#pageSearch.is-closing .search__field{ border-color:var(--border-primary); }
+#pageSearch.is-closing .page__head,
+#pageSearch.is-closing .search__results,
+#pageSearch.is-closing .search__close{ opacity:0; transition:opacity .16s linear; }
+
+/* Layout-animating the field is the expensive part of the morph — hint it. */
+.search__field.is-morphing{ will-change:left, top, width, height; }
+
+.kb{
+  flex:0 0 auto;
+  background:#D1D3D9;
+  padding-bottom:25px;                 /* home-indicator gutter */
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",Helvetica,Arial,sans-serif;
+  user-select:none;
+}
+.kb__accessory{
+  height:38px; background:#F2F2F7;
+  border-bottom:1px solid rgba(0,0,0,.14);
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 14px;
+}
+.kb__nudge{ display:flex; align-items:center; gap:22px; color:#B3B6BD; }
+.kb__nudge button{ border:0; background:none; padding:0; color:inherit; cursor:default; display:grid; place-items:center; }
+.kb__done{
+  border:0; background:none; padding:0; cursor:pointer;
+  font:700 17px/1 inherit; color:#33384B; letter-spacing:.01em;
+}
+.kb__done:active{ opacity:.5; }
+
+.kb__suggest{
+  height:40px; display:flex; align-items:stretch;
+  font-size:15px; color:#000;
+}
+.kb__suggest span{
+  flex:1; display:grid; place-items:center;
+  border-right:1px solid #B6B9C0;
+}
+.kb__suggest span:last-child{ border-right:0; }
+
+.kb__rows{ padding:6px 3px 0; display:flex; flex-direction:column; gap:10px; }
+.kb__row{ display:flex; gap:6px; justify-content:center; }
+
+.kb__key{
+  height:42px; flex:0 0 33px;
+  border:0; border-radius:5px;
+  background:#FFFFFF;
+  box-shadow:0 1px 0 rgba(0,0,0,.30);
+  font:400 22px/1 inherit; color:#000;
+  display:grid; place-items:center; cursor:pointer; padding:0;
+  -webkit-tap-highlight-color:transparent;
+}
+.kb__key:active{ background:#E4E5E9; }
+.kb__key--mod{ background:#ACB3BD; flex:0 0 42px; }
+.kb__key--mod:active{ background:#FFFFFF; }
+.kb__key--wide{ flex:0 0 92px; font-size:16px; }
+.kb__key--flex{ flex:1 1 auto; }
+.kb__key--space{ flex:1 1 auto; font-size:16px; }
+.kb__key--on{ background:#FFFFFF; }
+
+.kb__bottom{
+  height:44px; display:flex; align-items:center; justify-content:space-between;
+  padding:0 16px; color:#4A4A4A;
+}
+.kb__bottom button{ border:0; background:none; padding:0; color:inherit; cursor:default; display:grid; place-items:center; }
+
+/* ---- Toast (prototype affordance for un-built destinations) ---- */
+.toast{
+  position:absolute; left:50%; bottom:212px; z-index:80;
+  transform:translate(-50%,8px);
+  max-width:300px;
+  padding:12px var(--spacing-4);
+  border-radius:12px;
+  background:var(--surface-primary); color:var(--content-inverse);
+  font-size:14px; line-height:20px; font-weight:500; text-align:center;
+  opacity:0; pointer-events:none;
+  transition:opacity .2s linear, transform .24s var(--ease);
+}
+.toast.is-on{ opacity:1; transform:translate(-50%,0); }
+
+.home-indicator{
+  position:absolute; left:50%; bottom:8px; transform:translateX(-50%);
+  width:140px; height:5px; border-radius:3px; background:var(--content-primary);
+  z-index:90; pointer-events:none;
+}
+</style>
+</head>
+<body>
+
+<div class="stage-title">Yulu · Workbench flow</div>
+
+<div class="frame" id="frame">
+<div class="device" id="device">
+
+  <!-- ══════════════ BASE LAYER · My tasks ══════════════ -->
+  <div class="layer" id="layerTasks">
+    <!-- Drop a 390×844 export in as tasks-screen.png. If it's missing,
+         the coded fallback below renders instead. -->
+    <img class="tasks-img" id="tasksImg" src="assets/tasks-screen.png" alt="My tasks">
+
+    <div class="layer" id="tasksCoded" hidden>
+    <div class="statusbar">
+      <span>9:41</span>
+      <span class="glyphs">
+        <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+        <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor"><path d="M8.5 11.2 6.2 8.7a3.4 3.4 0 0 1 4.6 0L8.5 11.2Zm4.1-4.5a6.5 6.5 0 0 0-8.2 0L2.9 5.2a8.6 8.6 0 0 1 11.2 0L12.6 6.7ZM16.4 2.9a11.6 11.6 0 0 0-15.8 0L-.9 1.4a13.8 13.8 0 0 1 18.3 0L16.4 2.9Z" transform="translate(0.9,0)"/></svg>
+        <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="18" height="8" rx="2" fill="currentColor"/><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6Z" fill="currentColor" opacity=".4"/></svg>
+      </span>
+    </div>
+
+    <div class="appbar">
+      <span class="appbar__title">My tasks</span>
+      <button class="appbar__action appbar__action--trailing" aria-label="Search tasks" data-toast="Task search — not in this flow">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+      </button>
+    </div>
+
+    <div class="tasks__tabs">
+      <div class="tabs">
+        <button class="tab" aria-selected="false">Revive • 2</button>
+        <button class="tab" aria-selected="true">Assessment • 14</button>
+        <button class="tab" aria-selected="false">QC • 14</button>
+        <button class="tab" aria-selected="false">RTD • 6</button>
+        <button class="tab" aria-selected="false">Closed • 31</button>
+      </div>
+    </div>
+
+    <div class="tasklist" id="taskList"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════ SCRIM ══════════════ -->
+  <div class="scrim" id="scrim"></div>
+
+  <!-- ══════════════ SCREEN 1 · Bottom sheet ══════════════ -->
+  <section class="sheet" id="sheet" aria-label="Workbench favourites">
+    <div class="sheet__grab" id="sheetGrab">
+      <button class="sheet__expand" id="btnExpand" aria-label="Expand workbench"></button>
+    </div>
+    <div class="grid grid--sheet" id="sheetGrid"></div>
+  </section>
+
+  <!-- ══════════════ SCREEN 3 · Expanded page ══════════════ -->
+  <section class="page" id="pageExpanded" aria-label="Workbench">
+    <div class="page__head">
+      <div class="statusbar">
+        <span>9:41</span>
+        <span class="glyphs">
+          <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+          <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor"><path d="M8.5 11.2 6.2 8.7a3.4 3.4 0 0 1 4.6 0L8.5 11.2Zm4.1-4.5a6.5 6.5 0 0 0-8.2 0L2.9 5.2a8.6 8.6 0 0 1 11.2 0L12.6 6.7ZM16.4 2.9a11.6 11.6 0 0 0-15.8 0L-.9 1.4a13.8 13.8 0 0 1 18.3 0L16.4 2.9Z" transform="translate(0.9,0)"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="18" height="8" rx="2" fill="currentColor"/><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6Z" fill="currentColor" opacity=".4"/></svg>
+        </span>
+      </div>
+      <div class="appbar" id="expandedBar">
+        <span class="appbar__title">Workbench</span>
+      </div>
+    </div>
+
+    <div class="page__scroll" id="expandedScroll">
+      <div class="sectionhead">
+        <span class="t-heading-small">Favourities</span>
+        <button class="sectionhead__action" id="btnEdit" aria-label="Edit favourites">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7.5 18.5 3 20l1.5-4.5L16.5 3.5Z"/></svg>
+        </button>
+      </div>
+
+      <!-- heading → content: 24px -->
+      <div class="grid grid--page gap-head" id="favGrid"></div>
+
+      <!-- actions → tabs: 36px -->
+      <div class="gap-actions-tabs"></div>
+      <div class="tabs-wrap tabs--sticky" id="tabsWrap">
+        <div class="tabs" id="catTabs"></div>
+      </div>
+
+      <!-- tabs → content: 24px -->
+      <div class="grid grid--page gap-head" id="catGrid"></div>
+    </div>
+  </section>
+
+  <!-- ══════════════ SCREEN 2 · Search ══════════════ -->
+  <section class="page" id="pageSearch" aria-label="Search workbench">
+    <div class="page__head">
+      <div class="statusbar">
+        <span>9:41</span>
+        <span class="glyphs">
+          <svg width="18" height="12" viewBox="0 0 18 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+          <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor"><path d="M8.5 11.2 6.2 8.7a3.4 3.4 0 0 1 4.6 0L8.5 11.2Zm4.1-4.5a6.5 6.5 0 0 0-8.2 0L2.9 5.2a8.6 8.6 0 0 1 11.2 0L12.6 6.7ZM16.4 2.9a11.6 11.6 0 0 0-15.8 0L-.9 1.4a13.8 13.8 0 0 1 18.3 0L16.4 2.9Z" transform="translate(0.9,0)"/></svg>
+          <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".5" y=".5" width="21" height="11" rx="3.2" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="18" height="8" rx="2" fill="currentColor"/><path d="M23 4.2v3.6a2 2 0 0 0 0-3.6Z" fill="currentColor" opacity=".4"/></svg>
+        </span>
+      </div>
+      <div class="appbar"><span class="appbar__title">Workbench</span></div>
+    </div>
+
+    <div class="search__results" id="searchResults">
+      <div class="search__label" id="searchLabel">Recommended</div>
+      <div class="grid grid--page" id="searchGrid"></div>
+    </div>
+
+    <div class="search__bar">
+      <label class="search__field" for="searchInput">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+        <input class="search__input" id="searchInput" type="text" placeholder="" autocomplete="off"
+               autocapitalize="off" spellcheck="false" inputmode="none" aria-label="Search actions">
+        <button class="search__clear" id="searchClear" type="button" aria-label="Clear search">
+          <img src="assets/small_cancel.png" alt="" width="96" height="96">
+        </button>
+      </label>
+      <button class="search__close" id="searchClose" aria-label="Close search">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 6 18 18M18 6 6 18"/></svg>
+      </button>
+    </div>
+
+    <div class="kb" id="keyboard">
+      <div class="kb__accessory">
+        <div class="kb__nudge">
+          <button tabindex="-1" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 15 7-7 7 7"/></svg></button>
+          <button tabindex="-1" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 9 7 7 7-7"/></svg></button>
+        </div>
+        <button class="kb__done" id="kbDone">Done</button>
+      </div>
+
+      <div class="kb__suggest"><span>I</span><span>The</span><span>I'm</span></div>
+
+      <div class="kb__rows" id="kbRows"></div>
+
+      <div class="kb__bottom">
+        <button tabindex="-1" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r="1.1" fill="currentColor" stroke="none"/><circle cx="15" cy="10" r="1.1" fill="currentColor" stroke="none"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0" stroke-linecap="round"/></svg></button>
+        <button tabindex="-1" aria-hidden="true"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"/></svg></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════ FLOATING SEARCH (persistent) ══════════════ -->
+  <div class="searchfab" id="searchFab" hidden>
+    <button class="searchfab__btn" id="btnSearch">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>
+      Search
+    </button>
+  </div>
+
+  <!-- ══════════════ BOTTOM NAV ══════════════ -->
+  <nav class="bottomnav" id="bottomNav">
+    <button class="navitem" data-nav="tasks">
+      <span class="icon-mask" style="-webkit-mask-image:url('assets/tasks.png');mask-image:url('assets/tasks.png')"></span>Tasks
+    </button>
+    <button class="navitem" data-nav="map">
+      <span class="icon-mask" style="-webkit-mask-image:url('assets/map.png');mask-image:url('assets/map.png')"></span>Map
+    </button>
+    <button class="navitem" data-nav="workbench" aria-current="page">
+      <span class="icon-mask" style="-webkit-mask-image:url('assets/worbench.png');mask-image:url('assets/worbench.png')"></span>Workbench
+    </button>
+    <button class="navitem" data-nav="profile">
+      <span class="icon-mask" style="-webkit-mask-image:url('assets/profile.png');mask-image:url('assets/profile.png')"></span>Profile
+    </button>
+  </nav>
+
+  <div class="toast" id="toast"></div>
+  <div class="home-indicator"></div>
+</div>
+</div>
+
+<p class="stage-hint">
+  Tap <b>Workbench</b> in the nav to open the sheet · <b>drag the sheet up</b> or tap the grabber to expand · tap <b>Search</b> and type to filter.
+</p>
+
+<script>
+(() => {
+  "use strict";
+
+  /* ─────────────  DATA  ───────────── */
+  /* First run: nobody has curated anything yet, so we seed five sensible
+     defaults and offer a sixth "Add" slot. Ceiling is nine. */
+  /* Cased to match the Bike action labels so these resolve to real art.
+     "Miracle BLE reset" is the same action the designs called "MRE BLE reset". */
+  const DEFAULT_FAVOURITES = [
+    "commands", "bike status", "spare card", "warehouse tagging", "Miracle BLE reset"
+  ];
+  const MAX_FAVOURITES = 9;
+  let favourites = [...DEFAULT_FAVOURITES];
+
+  const CATEGORIES = [
+    { id:"bike",    label:"Bike",    img:"assets/bike.png",
+      /* Labels are taken verbatim from the icon filenames, and double as the
+         icon-lookup key — so they must stay unique across categories. */
+      actions:["bike status","bike locate","bike deployment",
+               "commands","bike beep","report bike",
+               "collect parts","request parts","spare card",
+               "warehouse tagging","bike device info","bike device swapping",
+               "imperial dead lock","Firmware update","Miracle BLE reset"] },
+    { id:"battery", label:"Battery", img:"assets/battery.png",
+      actions:["report battery","battery status","E- bike battery swapping",
+               "Deploy battery on bike","remove battery at warehouse","YCS swapping",
+               "battery charger","battery handshake","battery dashboard",
+               "remove battery mapping","correct battery mapping","battery history",
+               "Missing battery","battery self audit"] },
+    { id:"iot",      label:"IOT",      img:"assets/IOT.png",
+      actions:["IOT device info"] },
+    { id:"workflow", label:"Workflow", img:null,
+      actions:["bike assessment","MRE verification"] }
+  ];
+
+  /* Flat catalogue for search */
+  /* An action's id is its icon filename stem and must stay unique across
+     categories; its label is what the tile shows. Inside a category tab the
+     category name is redundant, so it's dropped from the label only — that
+     lets Bike "Status" and Battery "Status" coexist with different icons,
+     and lets Favourites and search fall back to the unambiguous full name. */
+  const LABEL = {
+    /* Bike */
+    "bike status":            "status",
+    "bike locate":            "locate",
+    "bike deployment":        "deployment",
+    "bike beep":              "beep",
+    "report bike":            "report",
+    "bike device info":       "device info",
+    "bike device swapping":   "device swapping",
+    /* Battery */
+    "battery status":         "status",
+    "report battery":         "report",
+    "battery charger":        "charger",
+    "battery handshake":      "handshake",
+    "battery dashboard":      "dashboard",
+    "battery history":        "history",
+    "battery self audit":     "self audit",
+    "remove battery mapping": "remove mapping",
+    "correct battery mapping":"correct mapping"
+  };
+  const labelOf = id => LABEL[id] || id;
+
+  const CATALOGUE = (() => {
+    const seen = new Map();
+    const add = (id, cat) => {
+      if (!seen.has(id)) seen.set(id, { id, label:labelOf(id), cat });
+    };
+    DEFAULT_FAVOURITES.forEach(id => add(id, "General"));
+    CATEGORIES.forEach(c => c.actions.forEach(id => add(id, c.label)));
+    return [...seen.values()];
+  })();
+
+  /* ─────────────  DOM  ───────────── */
+  const $ = id => document.getElementById(id);
+  const device        = $("device");
+  const scrim         = $("scrim");
+  const sheet         = $("sheet");
+  const sheetGrab     = $("sheetGrab");
+  const sheetGrid     = $("sheetGrid");
+  const btnExpand     = $("btnExpand");
+  const pageExpanded  = $("pageExpanded");
+  const expandedScroll= $("expandedScroll");
+  const favGrid       = $("favGrid");
+  const catTabs       = $("catTabs");
+  const catGrid       = $("catGrid");
+  const pageSearch    = $("pageSearch");
+  const searchGrid    = $("searchGrid");
+  const searchLabel   = $("searchLabel");
+  const searchResults = $("searchResults");
+  const searchInput   = $("searchInput");
+  const searchClear   = $("searchClear");
+  const searchClose   = $("searchClose");
+  const searchFab     = $("searchFab");
+  const btnSearch     = $("btnSearch");
+  const bottomNav     = $("bottomNav");
+  const toastEl       = $("toast");
+  const taskList      = $("taskList");
+
+  /* ─────────────  BUILDERS  ───────────── */
+  /* Empty-state placeholder — real icons drop in here later. */
+  const EMPTY_ICON =
+    `<svg class="icon" width="24" height="24" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+       <path d="M6 6 18 18M18 6 6 18"/>
+     </svg>`;
+
+  /* ── 3D icon art ────────────────────────────────────────
+     Two variants per action: `_tab` in the category grid, `_common` once it's
+     a favourite. Where only one exists it's used for both — per the brief,
+     a missing `_tab` means the `_common` art covers both places. */
+  const ART_DIR = "3d icons/";
+  const B = "battery/", W = "workflow/", BK = "bike/", I = "IOT/";  /* per-category folders */
+  const ART = {
+    /* IOT — single file, no _tab/_common split, so it serves both. */
+    "IOT device info":             {                                          common:I+"IOT device info.png" },
+    /* Bike */
+    "bike status":                 {                                          common:BK+"bike status_common.png" },
+    "bike locate":                 { tab:BK+"bike locate_tab.png",             common:BK+"bike locate_common.png" },
+    "bike deployment":             {                                          common:BK+"bike deployment_common.png" },
+    "commands":                    {                                          common:BK+"commands_common.png" },
+    "bike beep":                   {                                          common:BK+"bike beep_common.png" },
+    "report bike":                 { tab:BK+"report bike_tab.png",             common:BK+"report bike_common.png" },
+    "collect parts":               {                                          common:BK+"collect parts_common.png" },
+    "request parts":               {                                          common:BK+"request parts_common.png" },
+    "spare card":                  {                                          common:BK+"spare card_common.png" },
+    "warehouse tagging":           {                                          common:BK+"warehouse tagging_common.png" },
+    /* `Bike device info_tab.png` is exported at 334×36, so it's skipped —
+       the _common art covers both places until it's re-exported square. */
+    "bike device info":            {                                          common:BK+"bike device info_common.png" },
+    "bike device swapping":        {                                          common:BK+"bike device swapping_common.png" },
+    "imperial dead lock":          {                                          common:BK+"imperial dead lock_common.png" },
+    "Firmware update":             {                                          common:BK+"Firmware update_common.png" },
+    "Miracle BLE reset":           {                                          common:BK+"Miracle BLE reset_common.png" },
+    /* Battery */
+    "report battery":              { tab:B+"report battery_tab.png",          common:B+"report battery_common.png" },
+    "battery status":              { tab:B+"battery status_tab.png",          common:B+"battery status_common.png" },
+    "E- bike battery swapping":    {                                          common:B+"E- bike battery swapping_common.png" },
+    "Deploy battery on bike":      {                                          common:B+"Deploy batterty_common.png" },
+    "remove battery at warehouse": {                                          common:B+"remove battery at warehouse_common.png" },
+    "YCS swapping":                {                                          common:B+"YCS swapping_common.png" },
+    "battery charger":             {                                          common:B+"battery charger_common.png" },
+    "battery handshake":           { tab:B+"battery handshake_tab.png",       common:B+"battery handhake_common.png" },
+    "battery dashboard":           {                                          common:B+"dashboard_common.png" },
+    "remove battery mapping":      { tab:B+"remove battery mapping_tab.png",  common:B+"remove battery mapping_common.png" },
+    "correct battery mapping":     { tab:B+"correct battery mapping_tab.png", common:B+"correct battery mapping_common.png" },
+    "battery history":             { tab:B+"battery history_tab.png",         common:B+"battery history_common.png" },
+    "Missing battery":             {                                          common:B+"missing battery_common.png" },
+    "battery self audit":          {                                          common:B+"self audit_common.png" },
+    /* Workflow */
+    "bike assessment":             {                                          common:W+"bike assessment_common.png" },
+    "MRE verification":            {                                          common:W+"mreverification_common.png" }
+  };
+
+  function artFor(label, variant) {
+    const a = ART[label];
+    if (!a) return null;
+    const file = variant === "common" ? (a.common || a.tab) : (a.tab || a.common);
+    return file ? encodeURI(ART_DIR + file) : null;
+  }
+
+  const BADGE = {
+    minus:`<span class="tile__badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M7 12h10"/></svg></span>`,
+    plus: `<span class="tile__badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 7v10M7 12h10"/></svg></span>`
+  };
+
+  function tile(id, opts) {
+    opts = opts || {};
+    const b = document.createElement("button");
+    b.className = "tile";
+    b.type = "button";
+    const src = artFor(id, opts.variant || "tab");
+    const art = src
+      ? `<img class="tile__art" src="${src}" alt="">`
+      : `<span class="tile__ph">${EMPTY_ICON}</span>`;
+    /* Inside a category tab the category is implied, so the short label reads
+       better ("Status"). Out in Favourites there's no such context, so the
+       action reverts to its full name ("Bike status") — same switch that
+       takes the icon from its _tab art to its _common art. */
+    const name = opts.variant === "common" ? id : labelOf(id);
+    b.innerHTML =
+      `<span class="tile__icon">${art}${opts.badge ? BADGE[opts.badge] : ""}</span>
+       <span class="tile__label">${name}</span>`;
+    b.addEventListener("click", opts.onClick || (() => toast(`${name} — screen not built yet`)));
+    return b;
+  }
+
+  /* Search results carry no category context — the same reason Favourites
+     shows full names and _common art. Two actions named "Status" side by side
+     with their _tab icons are indistinguishable, so results use the full id. */
+  function fillGrid(node, ids, onClick) {
+    node.replaceChildren(...ids.map(id =>
+      tile(id, { variant:"common", onClick: onClick ? () => onClick(id) : undefined })));
+  }
+
+  /* ── Favourites + edit mode ─────────────────────────────
+     Curation happens only in edit mode, on the expanded page: favourites get
+     a −, catalogue actions get a +. The sheet never enters edit mode. */
+  let editing = false;
+
+  /* Pad a partial row out to three. 1,2,4,5,7,8 favourites leave a gap;
+     3, 6 and 9 are complete rows and get none. Zero shows a full empty row. */
+  function emptySlots() {
+    return favourites.length === 0 ? 3 : (3 - favourites.length % 3) % 3;
+  }
+
+  function slot(onClick) {
+    const b = document.createElement("button");
+    b.className = "slot";
+    b.type = "button";
+    b.setAttribute("aria-label", "Add a favourite");
+    b.innerHTML =
+      `<svg class="slot__frame" width="90" height="90" viewBox="0 0 90 90" aria-hidden="true">
+         <rect x="1" y="1" width="88" height="88" rx="15" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-dasharray="8 8"/>
+       </svg>
+       <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+         <path d="M12 6v12M6 12h12"/>
+       </svg>`;
+    b.addEventListener("click", onClick);
+    return b;
+  }
+
+  function renderFavourites() {
+    const slots = emptySlots();
+
+    /* From the sheet there's no edit affordance, so a slot takes you to the
+       expanded page and opens edit mode there. */
+    const sheetTiles = favourites.map(l => tile(l, { variant:"common" }));
+    for (let i = 0; i < slots; i++) {
+      sheetTiles.push(slot(() => { setView("expanded"); setEditing(true); }));
+    }
+    sheetGrid.replaceChildren(...sheetTiles);
+
+    const favTiles = favourites.map(l => editing
+      ? tile(l, { variant:"common", badge:"minus", onClick: () => removeFavourite(l) })
+      : tile(l, { variant:"common" }));
+    for (let i = 0; i < slots; i++) {
+      favTiles.push(slot(() => setEditing(true)));
+    }
+    favGrid.replaceChildren(...favTiles);
+    favGrid.classList.toggle("is-editing", editing);
+
+    syncSheetTop();
+  }
+
+  /* The sheet's height follows its content, so its top edge moves. The expand
+     animation starts from that edge, so publish it for #pageExpanded to read.
+     Measured in device px — the whole prototype is drawn at a scale factor. */
+  function syncSheetTop() {
+    const h = sheet.getBoundingClientRect().height / deviceScale();
+    device.style.setProperty("--sheet-top", Math.round(844 - h) + "px");
+  }
+
+  function renderCat() {
+    const full = favourites.length >= MAX_FAVOURITES;
+    catGrid.replaceChildren(...CATEGORIES[activeCat].actions.map(l => {
+      if (!editing) return tile(l);
+      if (favourites.includes(l)) return tile(l, { onClick: () => toast(`${l} is already a favourite`) });
+      if (full) return tile(l, { onClick: () => toast(`Favourites are full — remove one first`) });
+      return tile(l, { badge:"plus", onClick: () => addFavourite(l) });
+    }));
+    catGrid.classList.toggle("is-editing", editing);
+  }
+
+  function addFavourite(label) {
+    if (favourites.includes(label)) { toast(`${label} is already in favourites`); return; }
+    if (favourites.length >= MAX_FAVOURITES) { toast("Favourites are full — remove one first"); return; }
+    favourites.push(label);
+    renderFavourites();
+    renderCat();
+    toast(`${label} added to favourites`);
+  }
+
+  function removeFavourite(label) {
+    favourites = favourites.filter(l => l !== label);
+    renderFavourites();
+    renderCat();
+    toast(`${label} removed`);
+  }
+
+  const PENCIL_ICON =
+    `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7.5 18.5 3 20l1.5-4.5L16.5 3.5Z"/></svg>`;
+
+  function setEditing(on) {
+    editing = on;
+    const btn = document.querySelector(".sectionhead__action");
+    btn.classList.toggle("sectionhead__action--text", on);
+    btn.innerHTML = on ? "Done" : PENCIL_ICON;
+    btn.setAttribute("aria-label", on ? "Done editing favourites" : "Edit favourites");
+    renderFavourites();
+    renderCat();
+  }
+
+  /* Tasks screen: static image, with the coded screen as fallback */
+  (function tasksImage() {
+    const img = $("tasksImg"), coded = $("tasksCoded");
+    const fallback = () => { img.hidden = true; coded.hidden = false; };
+    img.addEventListener("error", fallback);
+    if (img.complete && img.naturalWidth === 0) fallback();
+  })();
+
+  /* Tasks list behind the sheet (fallback only) */
+  (function buildTasks() {
+    const bolt = `<svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></svg>`;
+    const rows = [
+      ["5078909 • Miracle","42%"], ["5078910 • Miracle","67%"], ["5078911 • Dex NV","28%"],
+      ["5078912 • Miracle","91%"], ["5078913 • Dex NV","12%"], ["5078914 • Miracle","55%"],
+      ["5078915 • Dex NV","74%"], ["5078916 • Miracle","33%"]
+    ];
+    const frag = document.createDocumentFragment();
+    rows.forEach(([name, pct], i) => {
+      const row = document.createElement("div");
+      row.className = "taskrow";
+      row.innerHTML = `<span class="taskrow__name">${name}</span>
+                       <span class="taskrow__batt">${bolt}${pct}</span>`;
+      frag.append(row);
+      if (i < rows.length - 1) {
+        const d = document.createElement("div");
+        d.className = "divider";
+        frag.append(d);
+      }
+    });
+    taskList.append(frag);
+  })();
+
+  renderFavourites();
+
+  /* Category tabs */
+  let activeCat = 0;
+  /* The icon shows on the selected tab only — unselected tabs are text. */
+  function renderTabs() {
+    catTabs.replaceChildren(...CATEGORIES.map((c, i) => {
+      const b = document.createElement("button");
+      b.className = "tab";
+      b.type = "button";
+      b.setAttribute("aria-selected", String(i === activeCat));
+      const icon = (i === activeCat && c.img)
+        ? `<img class="tab__icon" src="${c.img}" alt="">`
+        : "";
+      b.innerHTML = `${icon}${c.label}`;
+      b.addEventListener("click", () => selectCat(i));
+      return b;
+    }));
+  }
+
+  /* Trailing fade tells you the tab row scrolls; drop it at the end. */
+  (function tabScrollCue() {
+    const wrap = $("tabsWrap");
+    const sync = () => {
+      const atEnd = catTabs.scrollLeft + catTabs.clientWidth >= catTabs.scrollWidth - 1;
+      wrap.classList.toggle("at-end", atEnd);
+    };
+    catTabs.addEventListener("scroll", sync, { passive:true });
+    window.addEventListener("resize", sync);
+    sync();
+  })();
+
+  function selectCat(i) {
+    activeCat = i;
+    renderTabs();
+    renderCat();
+    catTabs.children[i].scrollIntoView({ behavior:"smooth", block:"nearest", inline:"nearest" });
+  }
+  $("btnEdit").addEventListener("click", () => setEditing(!editing));
+  selectCat(0);
+
+  /* ─────────────  VIEW STATE  ───────────── */
+  // 'tasks' | 'sheet' | 'expanded' | 'search'
+  let view = "tasks";
+
+  function setView(next) {
+    view = next;
+
+    /* The sheet stays mounted behind everything workbench-y so the expanded
+       page has a continuous white surface to grow out of (and shrink back to). */
+    const inWorkbench = next !== "tasks";
+    scrim.classList.toggle("is-on",   inWorkbench);
+    sheet.classList.toggle("is-open", inWorkbench);
+    pageExpanded.classList.toggle("is-on",
+      next === "expanded" || (next === "search" && searchOrigin === "expanded"));
+    pageSearch.classList.toggle("is-on", next === "search");
+
+    sheet.style.transform = "";                 // clear any drag offset
+    sheet.classList.remove("is-dragging");
+
+    bottomNav.hidden = next === "search";
+    searchFab.hidden = !(next === "sheet" || next === "expanded");
+
+    const activeNav = next === "tasks" ? "tasks" : "workbench";
+    document.querySelectorAll(".navitem").forEach(n => {
+      if (n.dataset.nav === activeNav) n.setAttribute("aria-current", "page");
+      else n.removeAttribute("aria-current");
+    });
+
+    if (next === "expanded") expandedScroll.scrollTop = 0;
+    /* Edit mode belongs to the expanded page — leaving it exits edit. */
+    if (next !== "expanded" && next !== "search" && editing) setEditing(false);
+
+    if (next === "search") {
+      searchInput.value = "";
+      renderSearch("");
+      kbLayer = "letters"; kbShift = false;
+      renderKeyboard();
+      syncClear();
+      setTimeout(() => searchInput.focus({ preventScroll:true }), 60);
+    } else {
+      searchInput.blur();
+    }
+  }
+
+  /* ─────────────  SHEET DRAG  ───────────── */
+  let drag = null;
+
+  function onDown(e) {
+    if (view !== "sheet") return;
+    // Don't capture the pointer when the press starts on the expand button —
+    // capture would redirect the pointer events and swallow its click.
+    if (e.target.closest("#btnExpand")) return;
+    // Height is content-driven now, so the dismiss threshold is measured per
+    // drag rather than taken off a constant.
+    drag = { y:e.clientY, dy:0, h:sheet.getBoundingClientRect().height / deviceScale() };
+    sheet.classList.add("is-dragging");
+    sheetGrab.setPointerCapture(e.pointerId);
+  }
+  function onMove(e) {
+    if (!drag) return;
+    drag.dy = (e.clientY - drag.y) / deviceScale();   /* screen px → device px */
+    // rubber-band upward, free downward
+    const offset = drag.dy < 0 ? Math.max(drag.dy, -140) * 0.55 : drag.dy;
+    sheet.style.transform = `translateY(${offset}px)`;
+  }
+  function onUp(e) {
+    if (!drag) return;
+    const dy = drag.dy, h = drag.h;
+    drag = null;
+    sheet.classList.remove("is-dragging");
+    sheet.style.transform = "";
+    try { sheetGrab.releasePointerCapture(e.pointerId); } catch {}
+
+    if (dy < -48)          setView("expanded");   // dragged up  → full page
+    else if (dy > h * 0.28) setView("tasks");      // dragged down → dismiss
+  }
+  sheetGrab.addEventListener("pointerdown", onDown);
+  sheetGrab.addEventListener("pointermove", onMove);
+  sheetGrab.addEventListener("pointerup", onUp);
+  sheetGrab.addEventListener("pointercancel", onUp);
+
+  /* The expand button owns its own presses — keep them off the drag handler. */
+  btnExpand.addEventListener("pointerdown", e => e.stopPropagation());
+
+  /* Safety net: if a pointerup is ever lost (capture failed, pointer left the
+     element), the sheet must not stay stuck mid-drag. */
+  window.addEventListener("pointerup", onUp);
+  window.addEventListener("pointercancel", onUp);
+
+  /* Drag down on the expanded page header → collapse back to the sheet */
+  (function collapseDrag() {
+    const head = pageExpanded.querySelector(".page__head");
+    let start = null;
+    head.addEventListener("pointerdown", e => { start = e.clientY; });
+    head.addEventListener("pointerup", e => {
+      if (start !== null && (e.clientY - start) / deviceScale() > 40) setView("sheet");
+      start = null;
+    });
+    head.addEventListener("pointercancel", () => { start = null; });
+  })();
+
+  /* ─────────────  SEARCH  ───────────── */
+  function renderSearch(q) {
+    const term = q.trim().toLowerCase();
+
+    if (!term) {
+      searchLabel.textContent = "Recommended";
+      searchLabel.hidden = false;
+      fillGrid(searchGrid, CATALOGUE.slice(0, 6).map(a => a.id));
+      searchGrid.hidden = false;
+      removeEmpty();
+      return;
+    }
+    const hits = CATALOGUE.filter(a => a.id.toLowerCase().includes(term)).slice(0, 12);
+    removeEmpty();
+    if (!hits.length) {
+      searchLabel.hidden = true;
+      searchGrid.hidden = true;
+      const p = document.createElement("p");
+      p.className = "search__empty";
+      p.id = "searchEmpty";
+      p.textContent = `No actions match “${q.trim()}”`;
+      searchResults.append(p);
+      return;
+    }
+    searchLabel.hidden = false;
+    searchLabel.textContent = `${hits.length} result${hits.length > 1 ? "s" : ""}`;
+    searchGrid.hidden = false;
+    fillGrid(searchGrid, hits.map(h => h.id));
+  }
+  function removeEmpty() {
+    const e = document.getElementById("searchEmpty");
+    if (e) e.remove();
+  }
+
+  /* ─────────────  iOS KEYBOARD  ───────────── */
+  const K = {
+    ch:   c => ({ type:"char", label:c }),
+    key:  (type, label, cls) => ({ type, label, cls })
+  };
+  const KB_LAYERS = {
+    letters: [
+      "qwertyuiop".split("").map(K.ch),
+      "asdfghjkl".split("").map(K.ch),
+      [K.key("shift","","mod"), ..."zxcvbnm".split("").map(K.ch), K.key("back","","mod")],
+      [K.key("layer","123","mod wide"), K.key("space","space","space"), K.key("return","return","mod wide")]
+    ],
+    numbers: [
+      "1234567890".split("").map(K.ch),
+      ["-","/",":",";","(",")","$","&","@","\""].map(K.ch),
+      [K.key("layer","#+=","mod flex"), ...[".",",","?","!","'"].map(c => ({ ...K.ch(c), cls:"flex" })), K.key("back","","mod flex")],
+      [K.key("layer","ABC","mod wide"), K.key("space","space","space"), K.key("return","return","mod wide")]
+    ],
+    symbols: [
+      ["[","]","{","}","#","%","^","*","+","="].map(K.ch),
+      ["_","\\","|","~","<",">","€","£","¥","•"].map(K.ch),
+      [K.key("layer","123","mod flex"), ...[".",",","?","!","'"].map(c => ({ ...K.ch(c), cls:"flex" })), K.key("back","","mod flex")],
+      [K.key("layer","ABC","mod wide"), K.key("space","space","space"), K.key("return","return","mod wide")]
+    ]
+  };
+  const LAYER_FOR = { "123":"numbers", "ABC":"letters", "#+=":"symbols" };
+
+  const ICON_SHIFT = `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.4 3.6 12H8v6.4h8V12h4.4L12 3.4Z"/></svg>`;
+  const ICON_BACK  = `<svg width="24" height="20" viewBox="0 0 28 22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M9 2h15a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H9L2 11 9 2Z" fill="currentColor" stroke="none" opacity=".92"/><path d="m12.5 7.5 7 7m0-7-7 7" stroke="#fff"/></svg>`;
+
+  const kbRows = $("kbRows");
+  let kbLayer = "letters";
+  let kbShift = false;
+
+  function renderKeyboard() {
+    const rows = KB_LAYERS[kbLayer];
+    kbRows.replaceChildren(...rows.map(row => {
+      const r = document.createElement("div");
+      r.className = "kb__row";
+      row.forEach(spec => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "kb__key" + (spec.cls ? " " + spec.cls.split(" ").map(c => "kb__key--" + c).join(" ") : "");
+        if (spec.type === "shift") {
+          b.innerHTML = ICON_SHIFT;
+          b.classList.toggle("kb__key--on", kbShift);
+          b.setAttribute("aria-label", "Shift");
+        } else if (spec.type === "back") {
+          b.innerHTML = ICON_BACK;
+          b.setAttribute("aria-label", "Backspace");
+        } else if (spec.type === "char") {
+          b.textContent = (kbShift && kbLayer === "letters") ? spec.label.toUpperCase() : spec.label;
+        } else {
+          b.textContent = spec.label;
+        }
+        b.addEventListener("click", () => pressKey(spec));
+        r.append(b);
+      });
+      return r;
+    }));
+  }
+
+  function pressKey(spec) {
+    switch (spec.type) {
+      case "char":
+        insert((kbShift && kbLayer === "letters") ? spec.label.toUpperCase() : spec.label);
+        if (kbShift) { kbShift = false; renderKeyboard(); }
+        break;
+      case "space":  insert(" "); break;
+      case "back":
+        searchInput.value = searchInput.value.slice(0, -1);
+        afterEdit();
+        break;
+      case "shift":
+        kbShift = !kbShift; renderKeyboard();
+        break;
+      case "layer":
+        kbLayer = LAYER_FOR[spec.label]; kbShift = false; renderKeyboard();
+        break;
+      case "return":
+        break;                                  /* results are already live */
+    }
+  }
+
+  function insert(ch) {
+    searchInput.value += ch;
+    afterEdit();
+  }
+  function afterEdit() {
+    renderSearch(searchInput.value);
+    syncClear();
+  }
+  function syncClear() {
+    searchClear.classList.toggle("is-on", searchInput.value.length > 0);
+  }
+
+  renderKeyboard();
+  $("kbDone").addEventListener("click", () => closeSearch(searchExit()));
+
+  searchClear.addEventListener("click", () => {
+    searchInput.value = "";
+    afterEdit();
+  });
+
+  searchInput.addEventListener("input", () => { renderSearch(searchInput.value); syncClear(); });
+
+  /* Where search was opened from — 'sheet' or 'expanded'. */
+  let searchOrigin = "sheet";
+
+  /* Closing search always returns you at least as far as you came from:
+     opened from the full page  → back to the full page, typed or not.
+     opened from the sheet      → the full page if a query was typed,
+                                  otherwise back to the sheet. */
+  function searchExit() {
+    if (searchOrigin === "expanded") return "expanded";
+    return searchInput.value.trim() ? "expanded" : "sheet";
+  }
+  searchClose.addEventListener("click", () => closeSearch(searchExit()));
+  /* ─────────────  PILL → FIELD MORPH  ─────────────
+     The floating Search pill and the search field are the same surface. On
+     open the field is planted on the pill's exact rect, then released to its
+     own geometry so it grows and travels up in one move; the keyboard rides
+     up underneath. On close the move runs backwards. */
+  const searchBar   = document.querySelector(".search__bar");
+  const searchField = document.querySelector(".search__field");
+  let collapsedGeom = null;                    /* pill rect, bar-local */
+  let closing = false;
+
+  /* Keep the JS timing tied to the CSS variable — one source of truth. */
+  const MORPH_MS = (parseFloat(
+    getComputedStyle(document.documentElement).getPropertyValue("--morph")) || 0.34) * 1000;
+
+  /* The device is CSS-scaled to fit the window, so client rects come back in
+     scaled pixels while inline geometry is written in the device's own 390×844
+     space. Everything measured off a rect must be divided by this. */
+  /* Declared, not assigned to a const: syncSheetTop() needs it during the very
+     first render, which runs earlier in this file. */
+  function deviceScale() { return device.getBoundingClientRect().width / 390; }
+
+  function applyGeom(g) {
+    searchField.style.left   = g.left   + "px";
+    searchField.style.top    = g.top    + "px";
+    searchField.style.width  = g.width  + "px";
+    searchField.style.height = g.height + "px";
+  }
+  function clearGeom() {
+    searchField.style.left = searchField.style.top =
+    searchField.style.width = searchField.style.height = "";
+  }
+
+  function openSearch(source) {
+    if (closing) return;
+    const pill = source.getBoundingClientRect();
+    searchOrigin = view === "expanded" ? "expanded" : "sheet";
+    setView("search");                          /* page mounts, FAB hides */
+
+    const bar = searchBar.getBoundingClientRect();
+    const s = deviceScale();
+    collapsedGeom = {
+      left:   Math.round((pill.left - bar.left) / s),
+      top:    Math.round((pill.top  - bar.top)  / s),
+      width:  Math.round(pill.width  / s),
+      height: Math.round(pill.height / s)
+    };
+
+    searchField.classList.add("is-morphing");
+    pageSearch.classList.add("is-opening");
+    searchField.style.transition = "none";      /* plant it on the pill … */
+    applyGeom(collapsedGeom);
+    void searchField.offsetHeight;              /* … commit that frame … */
+    searchField.style.transition = "";          /* … then let it grow */
+    clearGeom();
+    pageSearch.classList.remove("is-opening");  /* background/content fade in */
+    setTimeout(() => searchField.classList.remove("is-morphing"), MORPH_MS);
+  }
+  btnSearch.addEventListener("click", () => openSearch(btnSearch));
+
+  function closeSearch(dest) {
+    if (closing) return;                        /* ignore repeat taps */
+    closing = true;
+    searchInput.blur();
+
+    searchField.classList.add("is-morphing");
+    if (collapsedGeom) applyGeom(collapsedGeom);
+    pageSearch.classList.add("is-closing");
+
+    /* Let the morph finish before swapping views. Cutting it short is what
+       made this feel laggy: the field snapped back to full width while the
+       page was still on screen. */
+    setTimeout(() => {
+      setView(dest);
+      pageSearch.classList.remove("is-closing");
+      searchField.classList.remove("is-morphing");
+      clearGeom();
+      closing = false;
+    }, MORPH_MS);
+  }
+  btnExpand.addEventListener("click", () => setView("expanded"));
+
+  /* ─────────────  NAV  ───────────── */
+  bottomNav.addEventListener("click", e => {
+    const btn = e.target.closest(".navitem");
+    if (!btn) return;
+    const dest = btn.dataset.nav;
+    if (dest === "workbench") setView(view === "tasks" ? "sheet" : "tasks");
+    else if (dest === "tasks") setView("tasks");
+    else toast(`${btn.textContent.trim()} — not in this flow`);
+  });
+
+  scrim.addEventListener("click", () => setView("tasks"));
+
+  /* ─────────────  TOAST  ───────────── */
+  let toastTimer;
+  function toast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add("is-on");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove("is-on"), 1600);
+  }
+  device.addEventListener("click", e => {
+    const t = e.target.closest("[data-toast]");
+    if (t) toast(t.dataset.toast);
+  });
+
+  /* ─────────────  KEYS  ───────────── */
+  document.addEventListener("keydown", e => {
+    if (e.key !== "Escape") return;
+    if (view === "search") closeSearch(searchExit());
+    else if (view === "expanded") setView("sheet");
+    else if (view === "sheet") setView("tasks");
+  });
+
+  /* ─────────────  FIT TO WINDOW  ─────────────
+     Scale the phone so the whole 390×844 frame is always visible, however
+     short the window is. Never scales past 1:1. */
+  function fitDevice() {
+    const chrome = 118;                      /* title + hint + gaps + padding */
+    const byHeight = (window.innerHeight - chrome) / 844;
+    const byWidth  = (window.innerWidth  - 40)     / 390;
+    const scale = Math.max(0.3, Math.min(1, byHeight, byWidth));
+    document.documentElement.style.setProperty("--scale", scale.toFixed(4));
+    syncSheetTop();                          /* rects just changed size */
+  }
+  window.addEventListener("resize", fitDevice);
+  window.addEventListener("orientationchange", fitDevice);
+  fitDevice();
+
+  /* boot */
+  setView("tasks");
+})();
+</script>
+</body>
+</html>
