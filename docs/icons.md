@@ -55,6 +55,7 @@ The rule:
 | `bike status` | Status | Bike status |
 | `report bike` | Report | Report bike |
 | `bike device swapping` | Device swapping | Bike device swapping |
+| `bike device info` | Device information | Bike device information |
 | `battery status` | Status | Battery status |
 | `report battery` | Report | Report battery |
 | `remove battery mapping` | Remove mapping | Remove battery mapping |
@@ -72,8 +73,9 @@ before a name is drawn:
 | Rule | Example |
 |---|---|
 | Sentence case | `bike status` → "Bike status" |
-| `IOT` → `IoT` | `IOT device info` → "IoT device info" |
+| `IOT` → `IoT` | `IOT device info` → "IoT …" |
 | `E- bike` → `E-bike` | `E- bike battery swapping` → "E-bike battery swapping" |
+| `device info` → `device information` | `IOT device info` → "IoT device information" |
 
 Search matches against both forms, so typing either `e- bike` or `e-bike` finds
 the action.
@@ -83,9 +85,21 @@ pseudo-element doesn't apply to the `-webkit-box` the label needs for its
 two-line clamp: Chrome blockifies the box and honoured it anyway, iOS Safari
 didn't, and every label rendered lowercase on device. Keep it in JS.
 
-`WRAP_AFTER` forces a line break in a label that would otherwise sit awkwardly.
-Only `MRE verification` uses it — at 83px against an 86px label it squeaked onto
-one line while its row-mate `Bike assessment` wrapped.
+`WRAP_AFTER` forces a line break in a label that would otherwise sit awkwardly
+— either squeaking onto one line beside a row-mate that wrapped, or breaking in
+the wrong place. Keyed on the *displayed* name; the value is what ends line one:
+
+| Displayed | Breaks as |
+|---|---|
+| MRE verification | MRE / verification |
+| Correct mapping | Correct / mapping |
+| Bike deployment | Bike / deployment |
+| YCS swapping | YCS / swapping |
+| IoT device information | IoT device / information |
+
+`MRE verification` is the original case: at 83px against an 86px label it just
+fit on one line while its row-mate `Bike assessment` wrapped, and the row read
+lopsided.
 
 ## Adding an action
 

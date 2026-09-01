@@ -54,18 +54,30 @@ Applied in this flow:
 
 Satoshi, loaded from Fontshare, with a system fallback stack.
 
-| Role | Size / line / weight |
-|---|---|
-| Headings / Small | 20 / 28 / 700 |
-| Label / Medium (bold) | 16 / 20 / 700 |
-| Label / Medium | 16 / 20 / 500 |
-| Label / Small | 14 / 16 / 500 |
-| Label / XSmall | 12 / 16 / 500 |
-| Body / Medium | 16 / 24 / 500 |
-| Body / Small | 14 / 20 / 500 |
+Two cuts are loaded, 500 and 700. Satoshi has no semibold, so a role named
+"600" maps to the **Bold** cut — the number is the token's name, not a CSS
+weight. Don't write `font-weight: 600` against these faces: CSS font matching
+rounds a request above 500 up to the next available weight, so it renders as
+700 anyway, with nothing in the code saying why.
 
-Action labels are sentence-cased in CSS via `::first-letter`, so the stored
-strings can stay identical to the icon filenames.
+| Role | Size / line / weight | Used for |
+|---|---|---|
+| Headings / Small | 20 / 28 / 700 | defined, currently unused |
+| Label / Medium (bold) | 16 / 20 / 700 | "My tasks" app-bar title |
+| Label / Medium 600 | 16 / 20 / **700** | "Workbench" title |
+| Label / Medium | 16 / 20 / 500 | "Favourites", "Recommended", Search pill |
+| Label / Small | 14 / 16 / 500 | |
+| Label / XSmall | 12 / 16 / 500 | action tile labels |
+| Body / Medium | 16 / 24 / 500 | task rows |
+| Body / Small | 14 / 20 / 500 | toast |
+
+Section headings are label/medium, not Headings/Small: "Favourites" and
+"Recommended" sit in the same slot on their respective screens and read as the
+same kind of label. "Favourites" takes `content/primary`, "Recommended"
+`content/secondary`.
+
+Action labels are sentence-cased in JS, not CSS — see
+[icons.md](icons.md#display-polish) for why.
 
 ## Layout constants
 

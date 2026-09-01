@@ -14,7 +14,7 @@ and its corners stay continuous the whole way.
 | From | Action | To |
 |---|---|---|
 | Tasks | Tap **Workbench** in the nav | Sheet |
-| Sheet | Tap the grabber, or drag up past 48px | Expanded |
+| Sheet | Tap the arrow, or drag up past 48px | Expanded |
 | Sheet | Drag down past 28% of sheet height | Tasks |
 | Sheet | Tap outside (scrim) | Tasks |
 | Sheet / Expanded | Tap the **Search** pill | Search |
@@ -22,8 +22,14 @@ and its corners stay continuous the whole way.
 | Search | Tap **✕**, or **done** on the keyboard | See [Search](#search) |
 | Any workbench view | Tap **Tasks** in the nav | Tasks |
 
-The bottom nav hides in search — the keyboard takes that space. The Search pill
-shows only in `sheet` and `expanded`.
+The bottom nav is **never unmounted** — the keyboard simply covers it. The
+search page sits above the nav in the stack (z 60 vs 50) and paints an opaque
+background over it, so the nav is out of sight and unclickable while search is
+open, and is uncovered again as the keyboard leaves. Hiding the nav and
+restoring it at the end of the close left an empty band at the bottom of the
+screen for the whole time the keyboard was sliding away.
+
+The Search pill shows only in `sheet` and `expanded`.
 
 ## Collapsed screen
 
@@ -44,27 +50,26 @@ stacked — favourites on one, search and nav on another.
 
 Everything Workbench-y lives inside the sheet, in this order:
 
-1. Grabber
-2. **Workbench** title
-3. **Favourites** heading
-4. The favourites themselves
-5. **Search** pill
+1. Expand arrow
+2. **Favourites** heading
+3. The favourites themselves
+4. **Search** pill
 
-The title and heading are the same components the expanded page uses, at the
-same sizes, so the sheet reads as the top of that page rather than a different
-screen. The heading carries no pencil — editing belongs to the expanded page.
+The heading is the same component the expanded page uses, at the same size, so
+the sheet reads as the top of that page rather than a different screen. It
+carries no pencil — editing belongs to the expanded page.
 
-**Sized by its content**, capped at 620px. Fixed chrome is 242px — 8px above
-the grabber bar, the 4px bar, 16px from the bar to the title, the 20px title,
-26px under it, the 48px heading, 24 above the icons, 24 below them, the 48px
-pill, 24 to the sheet's bottom edge — plus 102px per row of favourites and 36px
-between rows:
+**Sized by its content**, capped at 606px. Fixed chrome is 228px — 24px above
+the arrow, the 14px arrow, 32px from the arrow down to "Favourites", the rest
+of the 48px heading, 24 above the icons, 24 below them, the 48px pill, 24 to
+the sheet's bottom edge — plus 102px per row of favourites and 36px between
+rows:
 
 | Favourites | Sheet height |
 |---|---|
-| 1–3 (one row) | 344px |
-| 4–6 (two rows) | 482px |
-| 7–9 (three rows) | 620px |
+| 1–3 (one row) | 330px |
+| 4–6 (two rows) | 468px |
+| 7–9 (three rows) | 606px |
 
 Nine favourites is the most possible, so the cap never actually bites — it's a
 guard. Every child is `flex: none`: a column flex container that hits its cap
@@ -79,19 +84,20 @@ over the scroll with its scrim, 164px off the bottom. The node is *moved*
 between the two rather than duplicated, so the pill → field morph keeps
 measuring a single live element.
 
-### Grabber
+### Expand arrow
 
-A 44 × 4 rounded rectangle in `border/primary`, 8px below the sheet's top edge
-and 16px above the Workbench title. Tapping expands. The bar carries a transparent
-**72 × 44** hit target, reaching from the sheet's top edge down past the band
-into the title's empty upper margin. Dragging from the band moves the sheet:
-rubber-banded upward (capped at 140px, damped to 55%), free downward.
+A 24 × 14 chevron in `content/disabled` (#B0B0B0), 24px below the sheet's top
+edge and 32px above "Favourites". Tapping expands. It carries a transparent
+**52 × 44** hit target — the glyph alone is far too small to aim at, and the
+padding around it is dead space otherwise. Dragging from the band moves the
+sheet: rubber-banded upward (capped at 140px, damped to 55%), free downward.
 
 ## Expanded page
 
 - **Favourites** section — up to nine tiles, with a pencil action in the header
-- Page title **Workbench** — label/medium in `content/secondary`, carried
-  through to the search screen so the header doesn't shift
+- Page title **Workbench** — label/medium600 (Satoshi Bold 16/20) in
+  `content/primary`, carried through to the search screen so the header
+  doesn't shift
 - **Categories** — a sticky tab strip (Bike · Battery · IoT · Workflow), then
   that category's actions
 - 24px between a section heading and its content; 36px between rows
@@ -151,6 +157,15 @@ keyboard rides up underneath. Closing runs the same move backwards.
 - A **✕** inside the field clears the query without leaving search
 - No matches shows `No actions match "…"`
 
+The empty field reads **Search**, in `content/disabled` (#B0B0B0). Its magnifier
+is `content/primary`, matching the floating pill's — the pill morphs into this
+field, so an icon that changed shade mid-flight reads as two different icons.
+
+**Recommended** occupies the same box as **Favourites** on the expanded page —
+48px tall, same padding, same label/medium type, and the grid below it carries
+the same 24px `gap-head`. Both the label and the first tile land on identical
+pixels, so nothing jumps when search takes over the screen.
+
 ### Results
 
 Results carry no category context, so — exactly like favourites — they use each
@@ -159,13 +174,23 @@ otherwise be indistinguishable.
 
 ### Closing
 
-The large **✕** returns you *at least* as far as you came from:
+The large **✕** always lands on the **expanded page**, never back in the sheet,
+whichever screen search was opened from. Coming out of a search you're looking
+for something, and the sheet holds only nine favourites — landing there hides
+the very catalogue you were searching.
 
-| Opened from | Typed something? | Lands on |
-|---|---|---|
-| Expanded page | either | Expanded page |
-| Sheet | yes | Expanded page |
-| Sheet | no | Sheet |
+Two consequences the code handles explicitly:
+
+- The field morphs onto where the pill **will be**, not where it was when
+  search opened. Opening from the sheet captures the in-sheet pill, which sits
+  8px above the floating one. The pill is parked in its destination and
+  measured with `visibility: hidden` — that still lays out, unlike `hidden`,
+  which measures zero.
+- When search was opened from the sheet, the expanded page grows **during** the
+  morph rather than after it. Left to the view swap you'd sit through 340ms of
+  morph and then a further 420ms of the page climbing. Overlapped it's one
+  move, ~390ms; the closing search page is transparent, so the page shows
+  through as it grows.
 
 ## Edit mode
 
@@ -201,7 +226,7 @@ full empty row.
 |---|---|
 | Run a frequent action | Workbench → tap it in the sheet |
 | Find an action you don't have saved | Workbench → Search → type → tap the result |
-| Browse everything in a category | Workbench → grabber → tab |
+| Browse everything in a category | Workbench → arrow → tab |
 | Save an action for later | Expanded → pencil → **+** on the action |
 | Clear out a stale favourite | Expanded → pencil → **−** on the favourite |
 | Fill an empty slot | Sheet → tap the dashed **+** → lands in edit mode |
