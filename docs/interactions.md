@@ -8,7 +8,7 @@ One state variable, four values: `tasks` · `sheet` · `expanded` · `search`.
 
 The sheet stays mounted behind everything workbench-y. The expanded page is not
 a separate screen that fades in — it starts at the sheet's own top edge with the
-sheet's 24px corner radius and stretches to full screen, so the white surface
+sheet's 36px corner radius and stretches to full screen, so the white surface
 and its corners stay continuous the whole way.
 
 | From | Action | To |
@@ -59,17 +59,17 @@ The heading is the same component the expanded page uses, at the same size, so
 the sheet reads as the top of that page rather than a different screen. It
 carries no pencil — editing belongs to the expanded page.
 
-**Sized by its content**, capped at 606px. Fixed chrome is 228px — 24px above
-the arrow, the 14px arrow, 32px from the arrow down to "Favourites", the rest
+**Sized by its content**, capped at 618px. Fixed chrome is 240px — 36px above
+the arrow, the 14px arrow, 36px from the arrow down to "Favourites", the rest
 of the 48px heading, 24 above the icons, 24 below them, the 48px pill, 24 to
 the sheet's bottom edge — plus 102px per row of favourites and 36px between
 rows:
 
 | Favourites | Sheet height |
 |---|---|
-| 1–3 (one row) | 330px |
-| 4–6 (two rows) | 468px |
-| 7–9 (three rows) | 606px |
+| 1–3 (one row) | 342px |
+| 4–6 (two rows) | 480px |
+| 7–9 (three rows) | 618px |
 
 Nine favourites is the most possible, so the cap never actually bites — it's a
 guard. Every child is `flex: none`: a column flex container that hits its cap
@@ -101,8 +101,8 @@ two `.searchfab.is-landed` rules; the JS that toggles the class is then inert.
 
 ### Expand arrow
 
-A 24 × 14 chevron in `content/disabled` (#B0B0B0), 24px below the sheet's top
-edge and 32px above "Favourites". Tapping expands. It carries a transparent
+A 24 × 14 chevron in `content/disabled` (#B0B0B0), 36px below the sheet's top
+edge and 36px above "Favourites". Tapping expands. It carries a transparent
 **52 × 44** hit target — the glyph alone is far too small to aim at, and the
 padding around it is dead space otherwise. Dragging from the band moves the
 sheet: rubber-banded upward (capped at 140px, damped to 55%), free downward.

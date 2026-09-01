@@ -73,8 +73,9 @@ rounds a request above 500 up to the next available weight, so it renders as
 
 Section headings are label/medium, not Headings/Small: "Favourites" and
 "Recommended" sit in the same slot on their respective screens and read as the
-same kind of label. "Favourites" takes `content/primary`, "Recommended"
-`content/secondary`.
+same kind of label, both in `content/primary`. The search label is one element
+with two states — the "Recommended" prompt and the "N results" count — so they
+share it.
 
 Action labels are sentence-cased in JS, not CSS — see
 [icons.md](icons.md#display-polish) for why.
@@ -83,7 +84,8 @@ Action labels are sentence-cased in JS, not CSS — see
 
 | Token | Value | Note |
 |---|---|---|
-| `--sheet-radius` | 24px | Sheet and expanded page top corners |
+| `--screen-radius` | 36px | The phone's own corners, both breakpoints |
+| `--sheet-radius` | 36px | Sheet and expanded page top corners |
 | `--ease` | `cubic-bezier(.32,.72,0,1)` | iOS-style sheet easing |
 | `--morph` | 340ms | Pill → search field; JS reads this value rather than duplicating it |
 | `--sheet-top` | measured | The sheet's live top edge; the expand animation starts here |

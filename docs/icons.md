@@ -127,5 +127,6 @@ around them rather than renaming:
 | Battery handshake (common) | `battery handhake_common.png` |
 | MRE verification | `mreverification_common.png` |
 
-`Bike device info_tab.png` is exported at 334 × 36 rather than square, so it's
-skipped — the `_common` art covers both places until it's re-exported.
+`Bike device info_tab.png` is cased differently from every other file in that
+folder — capital B, where its `_common` sibling is lowercase. Pages serves
+case-sensitively, so the `ART` entry has to match exactly.
