@@ -13,9 +13,12 @@ One folder per category. Every file is a 54 × 54 PNG.
 `IOT.png`), bottom-nav mask icons, and the cancel glyphs.
 
 Every tab in the category strip shows its icon at 32 × 32, selected or not —
-selection is carried by the underline and the darker label. `assets/workflow.png`
-is referenced but not yet exported; until it lands, the Workflow tab drops its
-image on load error and renders as a plain text tab.
+selection is carried by the underline and the darker label.
+
+`assets/workflow.svg` is a **placeholder**: a monochrome glyph, not the flat 3D
+style of the other three. Swap the path in `CATEGORIES` when the real export
+lands. A tab whose art is missing drops its `<img>` on load error and renders as
+a plain text tab rather than showing a broken-image glyph.
 
 `Icon style/yulu-icon-style_final.json` holds the icon style definition.
 
