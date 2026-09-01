@@ -1173,27 +1173,36 @@ body{
     padCatGrid();
   }
 
-  /* Keep the tab strip pinnable whatever category is showing. IoT has one
-     action, so switching to it from the bottom of Bike used to shrink the page
-     below its own scroll offset — the browser clamps scrollTop and the sticky
-     strip slides back down the screen. Growing the short category's grid until
-     the scroll can still reach the strip's sticky position fixes it at the
-     source, rather than trying to restore scrollTop afterwards.
+  /* Give a short category exactly enough height that the scroll ends with the
+     tab strip pinned — no less, so the strip can't slide back down when you
+     switch to IoT from the bottom of Bike; and no more, or those one or two
+     actions scroll up underneath the strip and get cut off.
 
-     The tabs stick at top:0, so the content below them has to be at least a
-     scrollport tall, less the strip itself. Measured, not hardcoded: the
-     scrollport's own height is used rather than clientHeight, which is short
-     while the page sits collapsed behind the sheet. */
+     Everything is derived from #catGrid, never from the strip: offsetTop on a
+     position:sticky element reports where it's currently *painted*, so reading
+     it while the strip was pinned inflated the answer and the padding grew on
+     every switch. #catGrid is statically positioned, so its offsetTop is its
+     real place in the scroll content.
+
+     Want: maxScroll === the strip's own offset, i.e.
+       scrollHeight - port === gridTop - stripHeight
+     and since scrollHeight === gridTop + gridHeight + tail, that reduces to
+       gridHeight === port - stripHeight - tail.
+
+     `tail` is read off the container's own padding rather than measured from
+     scrollHeight: the grid is the container's last child, and scrollHeight
+     bottoms out at clientHeight, so on a short category it reports the port
+     height and makes the tail look bigger than it is. */
   function padCatGrid() {
     /* Dropping the padding to measure the natural height collapses the page,
        and the browser clamps scrollTop on the spot — restoring the height
        afterwards doesn't bring the scroll back. Put it back by hand. */
     const keep = expandedScroll.scrollTop;
     catGrid.style.minHeight = "0px";
-    const port  = 844 - pageHead.offsetHeight;
-    const below = expandedScroll.scrollHeight - (tabsWrap.offsetTop + tabsWrap.offsetHeight);
-    const grow  = (port - tabsWrap.offsetHeight) - below;
-    if (grow > 0) catGrid.style.minHeight = Math.ceil(catGrid.offsetHeight + grow) + "px";
+    const port = 844 - pageHead.offsetHeight;
+    const tail = parseFloat(getComputedStyle(expandedScroll).paddingBottom) || 0;
+    const want = port - tabsWrap.offsetHeight - tail;
+    if (want > catGrid.offsetHeight) catGrid.style.minHeight = Math.ceil(want) + "px";
     expandedScroll.scrollTop = keep;
   }
 

@@ -110,13 +110,27 @@ Bike shrank the page below its own scroll offset — the browser clamps
 
 Two things hold it still:
 
-- A short category's grid grows a `min-height`, so the content below the strip
-  is always at least a scrollport tall, less the strip itself. Measured against
-  the page's full height rather than `clientHeight`, which is short while the
-  page sits collapsed behind the sheet.
+- A short category's grid grows a `min-height` sized so the scroll ends
+  **exactly** where the strip pins — no less, or the strip slides back down; no
+  more, or those one or two actions scroll up underneath it and get cut off. At
+  the end of the scroll the first row sits 24px below the strip, same as it
+  would unscrolled.
 - `scrollTop` is held across the whole swap. Rebuilding the strip and the grid
   each momentarily shrink the page and the browser clamps on the spot;
   restoring the height afterwards doesn't bring the scroll back.
+
+Two measurement traps, both of which produced a padding that drifted on every
+switch until it was wrong:
+
+- **`offsetTop` on a `position: sticky` element reports where it's painted**,
+  not its place in the layout. Read while the strip was pinned, it returned the
+  scroll offset plus the header, and the padding compounded — 590px, then
+  706px. Everything is derived from `#catGrid` instead, which is statically
+  positioned.
+- **`scrollHeight` bottoms out at `clientHeight`.** On a short category it
+  reports the port height, so a tail measured as `scrollHeight − content` came
+  out 18px too big. The tail is read off the container's `padding-bottom`
+  instead; the grid is its last child.
 
 ## Search
 
