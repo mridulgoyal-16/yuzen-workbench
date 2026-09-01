@@ -84,6 +84,21 @@ over the scroll with its scrim, 164px off the bottom. The node is *moved*
 between the two rather than duplicated, so the pill → field morph keeps
 measuring a single live element.
 
+Floating, it carries `0 5px 18px rgba(0,0,0,.15)` plus a tight contact shadow.
+That reach — 5 + 18 = 23px below the pill — is the most it can have: inside the
+collapsed sheet only 24px of padding sits under it before `overflow: hidden`
+clips the tail. To make it heavier, raise the opacity, not the blur.
+
+**Landed at the end of the scroll.** Once the page can't scroll further there
+is nothing behind the pill: the scrim has nothing to fade out and the lift has
+nothing to lift off. Both come away over 200ms and the pill reads as sitting on
+the bottom of the page rather than hovering over it. The scrim is on a
+pseudo-element purely so it can fade — gradients don't interpolate to `none`,
+opacity does. In the sheet the pill is a plain row and never lands.
+
+This was picked over keeping the pill always-floating. To undo it, delete the
+two `.searchfab.is-landed` rules; the JS that toggles the class is then inert.
+
 ### Expand arrow
 
 A 24 × 14 chevron in `content/disabled` (#B0B0B0), 24px below the sheet's top

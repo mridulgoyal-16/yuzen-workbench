@@ -298,9 +298,28 @@ body{
   z-index:40;
   display:grid; place-items:center;
   pointer-events:none;
-  background:linear-gradient(to bottom, rgba(255,255,255,0) 0%, rgba(255,255,255,.86) 42%, var(--canvas-primary) 100%);
   transition:opacity .22s var(--ease), transform .28s var(--ease);
 }
+/* The scrim lives on a pseudo-element so it can fade. Gradients don't
+   interpolate to `none`, but opacity does.
+   Light touch: it only has to keep a tile from colliding with the pill, not
+   erase it. The old ramp hit 86% opaque by 42% of the band, which read as a
+   solid white slab over whatever was scrolling underneath. */
+.searchfab::before{
+  content:""; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(to bottom,
+    rgba(255,255,255,0)   0%,
+    rgba(255,255,255,.28) 40%,
+    rgba(255,255,255,.66) 70%,
+    var(--canvas-primary) 100%);
+  transition:opacity .2s linear;
+}
+/* Landed: scrolled to the end of the page, where there is nothing behind the
+   pill. The scrim has nothing to fade out and the lift has nothing to lift off,
+   so both come away and the pill reads as sitting on the bottom of the page.
+   Revert to the always-floating treatment by deleting these two rules. */
+.searchfab.is-landed::before{ opacity:0; }
+.searchfab.is-landed .searchfab__btn{ box-shadow:0 1px 3px rgba(0,0,0,.05); }
 .searchfab__btn{
   pointer-events:auto;
   height:48px; min-width:48px; padding:0 var(--spacing-6) 0 20px;
@@ -311,8 +330,11 @@ body{
   font-family:var(--font); font-size:16px; line-height:20px; font-weight:500;
   display:inline-flex; align-items:center; gap:var(--spacing-2);
   cursor:pointer;
-  box-shadow:0 4px 16px rgba(0,0,0,.08);
-  transition:transform .12s var(--ease);
+  /* 5 + 18 = 23px of reach below the pill. Inside the collapsed sheet only 24px
+     of padding sits under it before `overflow:hidden` clips, so this is as far
+     as the shadow can go without losing its tail there. */
+  box-shadow:0 5px 18px rgba(0,0,0,.15), 0 1px 4px rgba(0,0,0,.06);
+  transition:transform .12s var(--ease), box-shadow .2s linear;
 }
 .searchfab__btn:active{ transform:scale(.96); }
 /* Inside the collapsed sheet the pill isn't a floating layer — it's the last
@@ -323,6 +345,9 @@ body{
   height:auto; padding-top:var(--spacing-6);
   background:none;
 }
+/* No scrim in the sheet — and the pseudo-element would anchor to the sheet
+   rather than the band, since the band isn't positioned here. */
+.sheet > .searchfab::before{ content:none; }
 
 /* ============================================================
    BOTTOM NAV  (100px: 16px top pad + 44px items)
@@ -879,17 +904,21 @@ body{
     { id:"bike",    label:"Bike",    img:"assets/bike.png",
       /* Labels are taken verbatim from the icon filenames, and double as the
          icon-lookup key — so they must stay unique across categories. */
-      actions:["bike status","bike locate","bike deployment",
-               "commands","bike beep","report bike",
-               "collect parts","request parts","spare card",
+      /* Order is by how often the action gets used, not alphabetical. Two
+         fixed points at the end: beep sits in the middle of the last row, and
+         Firmware update is last. */
+      actions:["commands","report bike","bike status",
+               "bike deployment","bike locate","Miracle BLE reset",
+               "spare card","collect parts","request parts",
                "warehouse tagging","bike device info","bike device swapping",
-               "imperial dead lock","Firmware update","Miracle BLE reset"] },
+               "imperial dead lock","bike beep","Firmware update"] },
     { id:"battery", label:"Battery", img:"assets/battery.png",
-      actions:["report battery","battery status","E- bike battery swapping",
-               "Deploy battery on bike","remove battery at warehouse","YCS swapping",
-               "battery charger","battery handshake","battery dashboard",
-               "remove battery mapping","correct battery mapping","battery history",
-               "Missing battery","battery self audit"] },
+      /* Same idea as Bike: ordered by how often the action gets used. */
+      actions:["report battery","battery status","battery history",
+               "Deploy battery on bike","remove battery at warehouse","E- bike battery swapping",
+               "remove battery mapping","battery handshake","correct battery mapping",
+               "battery self audit","YCS swapping","battery charger",
+               "battery dashboard","Missing battery"] },
     { id:"iot",      label:"IoT",      img:"assets/IOT.png",
       actions:["IOT device info"] },
     /* Placeholder art: a monochrome glyph, not the flat 3D style of the other
@@ -939,7 +968,9 @@ body{
     [/\bIOT\b/g,          "IoT"],
     [/\bE-\s+bike\b/gi,   "E-bike"],
     /* \binfo\b won't touch a name that already says "information". */
-    [/\bdevice info\b/gi, "device information"]
+    [/\bdevice info\b/gi, "device information"],
+    /* The icon file is "Miracle BLE reset"; the action is just "BLE reset". */
+    [/\bMiracle BLE reset\b/g, "BLE reset"]
   ];
   function display(s) {
     const t = SPELLING.reduce((acc, [re, to]) => acc.replace(re, to), s);
@@ -1173,7 +1204,20 @@ body{
     if (host === sheet) sheet.append(searchFab);
     else device.insertBefore(searchFab, bottomNav);
     syncSheetTop();                        /* the sheet just changed height */
+    syncFabLanded();
   }
+
+  /* At the end of the scroll there's nothing behind the pill: the scrim has
+     nothing to fade out and the lift has nothing to lift off, so both come away
+     and the pill reads as sitting on the bottom of the page. Only on the
+     expanded page — in the sheet the pill is a plain row and stays as it is. */
+  function syncFabLanded() {
+    const floating = searchFab.parentNode === device;
+    const atEnd = expandedScroll.scrollHeight - expandedScroll.clientHeight
+                - expandedScroll.scrollTop <= 2;
+    searchFab.classList.toggle("is-landed", floating && atEnd);
+  }
+  expandedScroll.addEventListener("scroll", syncFabLanded, { passive:true });
   placeSearchFab("sheet");                 /* the collapsed sheet is its home */
 
   function renderCat() {
@@ -1219,6 +1263,7 @@ body{
     const want = port - tabsWrap.offsetHeight - tail;
     if (want > catGrid.offsetHeight) catGrid.style.minHeight = Math.ceil(want) + "px";
     expandedScroll.scrollTop = keep;
+    syncFabLanded();               /* the page just changed height */
   }
 
   function addFavourite(label) {
@@ -1366,6 +1411,7 @@ body{
        value it had before the pill was in the sheet, and the expand animation
        would start 72px too low. */
     syncSheetTop();
+    syncFabLanded();
 
     const activeNav = next === "tasks" ? "tasks" : "workbench";
     document.querySelectorAll(".navitem").forEach(n => {

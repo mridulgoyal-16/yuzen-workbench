@@ -76,6 +76,7 @@ before a name is drawn:
 | `IOT` → `IoT` | `IOT device info` → "IoT …" |
 | `E- bike` → `E-bike` | `E- bike battery swapping` → "E-bike battery swapping" |
 | `device info` → `device information` | `IOT device info` → "IoT device information" |
+| `Miracle BLE reset` → `BLE reset` | the icon file keeps the longer name |
 
 Search matches against both forms, so typing either `e- bike` or `e-bike` finds
 the action.
