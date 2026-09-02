@@ -277,8 +277,8 @@ body{
 .tabs{
   flex:none;
   display:flex; align-items:center; gap:12px;
-  /* 12px each side: with the 40px spacer above and the grid's 12px below, that
-     puts 52px between the favourites and the chips, and 24px between the chips
+  /* 12px each side: with the 24px spacer above and the grid's 12px below, that
+     puts 36px between the favourites and the chips, and 24px between the chips
      and the actions. Splitting it this way rather than loading it all onto the
      grid keeps a 12px margin under the chips while the strip is pinned —
      otherwise scrolling content is clipped flush against the chip edge. */
@@ -543,7 +543,7 @@ body{
 /* Expanded-page vertical rhythm */
 .gap-head{ padding-top:var(--spacing-6); }          /* heading → content: 24px */
 .gap-chips{ padding-top:12px; }                     /* + the strip's 12px = 24px */
-.gap-actions-tabs{ height:40px; }                   /* + the strip's 12px = 52px */
+.gap-actions-tabs{ height:var(--spacing-6); }       /* + the strip's 12px = 36px */
 
 /* ---- Search page (screen 2) ---- */
 /* No padding of its own: "Recommended" has to start exactly where "Favourites"
