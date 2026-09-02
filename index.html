@@ -224,7 +224,10 @@ body{
    ============================================================ */
 /* One grid everywhere — sheet and full page share identical metrics so the
    expand animation doesn't re-lay-out its contents mid-motion.
-   90px tiles evenly distributed (36px gutters), 36px rows, 48px icons. */
+   28px gutters, 36px rows, 54px icons. The column width falls out of the
+   gutter rather than the other way round: the row still spans the full 342px
+   content area, so the outer tiles stay flush with the 24px screen margin —
+   (342 − 2×28) / 3 = 95.33px. Change the gutter and this number moves with it. */
 .grid{
   /* Its own stacking context, so the tiles' position:relative icons stay
      confined below the sticky strip instead of joining the positioned layer
@@ -232,7 +235,7 @@ body{
   position:relative; z-index:0;
   display:grid;
   padding:0 var(--spacing-6);                    /* 342px content area */
-  grid-template-columns:repeat(3,90px);
+  grid-template-columns:repeat(3,95.333px);
   justify-content:space-between;
   row-gap:var(--spacing-9);
 }
@@ -275,7 +278,10 @@ body{
    into edit mode. Top-aligned so it lines up with the icons beside it. */
 .slot{
   position:relative;
-  width:90px; height:90px; align-self:start;
+  /* Stays a 90px square while its column is 95.33px, so it needs centring —
+     a fixed-width grid item doesn't stretch, and would otherwise sit at the
+     column's start edge, half a tile left of the icons above it. */
+  width:90px; height:90px; align-self:start; justify-self:center;
   padding:0; cursor:pointer;
   border:0; border-radius:16px; background:none;
   color:var(--content-disabled);
@@ -292,11 +298,22 @@ body{
 .slot:active{ color:var(--content-secondary); }
 .slot:active .slot__frame{ color:var(--border-secondary); }
 
+/* Amplitude is uniform on purpose and always has been — every tile peaks at
+   1.1°, in every category. IoT and Workflow still read as wilder because of
+   what the periods do at small counts: the fastest of the three landed on
+   tile #1, and those two grids hold one and two tiles. A lone tile running the
+   quickest wiggle, with nothing else moving on the screen to average it into a
+   shimmer, reads as amplitude. Two tiles were worse — a and b are exact
+   antiphase, so the pair scissored in lockstep, which the eye reads as one
+   deliberate motion rather than noise.
+   So the spread moved off the fast end, and the negative delay knocks the even
+   tiles out of phase with their neighbours. Don't put the shortest duration
+   back on the base rule: it lands on the tile that is on its own. */
 @keyframes tile-wiggle-a{ 0%,100%{ transform:rotate(-1.1deg); } 50%{ transform:rotate(1.1deg); } }
 @keyframes tile-wiggle-b{ 0%,100%{ transform:rotate(1.1deg); } 50%{ transform:rotate(-1.1deg); } }
-.grid.is-editing .tile{ animation:tile-wiggle-a .27s ease-in-out infinite; }
-.grid.is-editing .tile:nth-child(even){ animation-name:tile-wiggle-b; animation-duration:.31s; }
-.grid.is-editing .tile:nth-child(3n){ animation-duration:.29s; }
+.grid.is-editing .tile{ animation:tile-wiggle-a .33s ease-in-out infinite; }
+.grid.is-editing .tile:nth-child(even){ animation-name:tile-wiggle-b; animation-duration:.35s; animation-delay:-.09s; }
+.grid.is-editing .tile:nth-child(3n){ animation-duration:.31s; }
 @media (prefers-reduced-motion:reduce){
   .grid.is-editing .tile{ animation:none; }
 }
@@ -574,16 +591,9 @@ body{
   display:grid; place-items:center; color:var(--content-primary); border-radius:999px;
 }
 .sectionhead__action:active{ background:var(--surface-secondary); }
-/* Scroll cue — the tab row overflows by ~48px, so fade the trailing edge to
-   signal there's more. Fades out once you've scrolled to the end. */
+/* No trailing fade. It was a scroll cue, but with four chips the one it washed
+   out was Workflow — the cue cost more than it bought. */
 .tabs-wrap{ position:relative; background:var(--canvas-primary); }
-.tabs-wrap::after{
-  content:""; position:absolute; right:0; top:0; bottom:0; width:48px;
-  pointer-events:none;
-  background:linear-gradient(to right, rgba(255,255,255,0) 0%, var(--canvas-primary) 78%);
-  opacity:1; transition:opacity .2s linear;
-}
-.tabs-wrap.at-end::after{ opacity:0; }
 .tabs--sticky{ position:sticky; top:0; z-index:5; }
 
 /* Expanded-page vertical rhythm */
@@ -1476,18 +1486,6 @@ body{
     }));
   }
 
-  /* Trailing fade tells you the tab row scrolls; drop it at the end. */
-  (function tabScrollCue() {
-    const wrap = $("tabsWrap");
-    const sync = () => {
-      const atEnd = catTabs.scrollLeft + catTabs.clientWidth >= catTabs.scrollWidth - 1;
-      wrap.classList.toggle("at-end", atEnd);
-    };
-    catTabs.addEventListener("scroll", sync, { passive:true });
-    window.addEventListener("resize", sync);
-    sync();
-  })();
-
   function selectCat(i) {
     /* Rebuilding the strip and the grid each momentarily shrink the page, and
        the browser clamps scrollTop on the spot. Hold the scroll across the
@@ -1511,15 +1509,14 @@ body{
   $("miEditFavourites").addEventListener("click", e => { e.stopPropagation(); setEditing(true); });
   $("btnDone").addEventListener("click", e => { e.stopPropagation(); setEditing(false); });
 
-  /* Tapping away closes the menu without entering edit mode, and leaves edit
-     mode when you're in it. "Away" means genuine background — anything that
-     isn't a tile, an empty slot, or a control. */
+  /* Tapping away closes the menu. It does NOT leave edit mode: Done is the only
+     way out. Tapping background used to exit too, and a chip tap took it with
+     them — selecting a category rebuilds the strip, so by the time the click
+     reached here e.target was detached and read as background. One exit, no
+     ambiguity about which taps are safe while editing. */
   pageExpanded.addEventListener("click", e => {
     if (e.target.closest("#btnMenu, #editMenu")) return;
-    if (menuOpen()) { closeMenu(); return; }
-    if (!editing) return;
-    if (e.target.closest(".tile, .slot, .appbar, .tabs-wrap, .searchfab")) return;
-    setEditing(false);
+    if (menuOpen()) closeMenu();
   });
   selectCat(0);
 
