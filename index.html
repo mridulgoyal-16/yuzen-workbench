@@ -266,8 +266,7 @@ body{
 /* ---- Edit mode: iOS-style wiggle + add/remove badges ---- */
 .tile__badge{
   position:absolute; top:-2px; right:-2px;
-  /* 50% up from 22px — the badges are the touch target in edit mode. */
-  width:33px; height:33px; border-radius:999px;
+  width:22px; height:22px; border-radius:999px;
   /* Grey500 direct — the DS has no semantic surface token for this fill. */
   background:var(--color-grey-500); color:var(--content-inverse);
   display:grid; place-items:center;
@@ -1194,8 +1193,8 @@ body{
   }
 
   const BADGE = {
-    minus:`<span class="tile__badge"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M7 12h10"/></svg></span>`,
-    plus: `<span class="tile__badge"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 7v10M7 12h10"/></svg></span>`
+    minus:`<span class="tile__badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M7 12h10"/></svg></span>`,
+    plus: `<span class="tile__badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 7v10M7 12h10"/></svg></span>`
   };
 
   function tile(id, opts) {
