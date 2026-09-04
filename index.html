@@ -728,7 +728,10 @@ body{
 .kb__nudge button{ border:0; background:none; padding:0; color:inherit; cursor:default; display:grid; place-items:center; }
 .kb__done{
   border:0; background:none; padding:0; cursor:pointer;
-  font:700 17px/1 inherit; color:#33384B; letter-spacing:.01em;
+  /* Longhands for the same reason as .kb__key — the shorthand with `inherit`
+     as the family is invalid and silently drops the size. */
+  font-weight:700; font-size:17px; line-height:1; font-family:inherit;
+  color:#33384B; letter-spacing:.01em;
 }
 .kb__done:active{ opacity:.5; }
 
@@ -750,16 +753,24 @@ body{
   border:0; border-radius:5px;
   background:#FFFFFF;
   box-shadow:0 1px 0 rgba(0,0,0,.30);
-  font:400 22px/1 inherit; color:#000;
+  /* Longhands, deliberately — NOT the `font` shorthand. `font:400 25px/1 inherit`
+     is invalid: the shorthand ends in a font-family, and `inherit` isn't one, so
+     the browser threw the whole declaration away and every cap fell back to the
+     13.33px default a <button> gets. The keys were never rendering at the size
+     the stylesheet claimed. If you touch this, keep it as longhands. */
+  font-weight:400; font-size:25px; line-height:1; font-family:inherit;
+  color:#000;
   display:grid; place-items:center; cursor:pointer; padding:0;
   -webkit-tap-highlight-color:transparent;
 }
 .kb__key:active{ background:#E4E5E9; }
 .kb__key--mod{ background:#ACB3BD; flex:0 0 42px; }
 .kb__key--mod:active{ background:#FFFFFF; }
-.kb__key--wide{ flex:0 0 92px; font-size:16px; }
+/* Word keys stay below the letters — they're words, not single glyphs, and
+   matching 26px would crowd "return" against its cap. */
+.kb__key--wide{ flex:0 0 92px; font-size:18px; }
 .kb__key--flex{ flex:1 1 auto; }
-.kb__key--space{ flex:1 1 auto; font-size:16px; }
+.kb__key--space{ flex:1 1 auto; font-size:18px; }
 .kb__key--on{ background:#FFFFFF; }
 
 .kb__bottom{
@@ -1716,7 +1727,11 @@ body{
           b.innerHTML = ICON_BACK;
           b.setAttribute("aria-label", "Backspace");
         } else if (spec.type === "char") {
-          b.textContent = (kbShift && kbLayer === "letters") ? spec.label.toUpperCase() : spec.label;
+          /* Caps always read uppercase on the letters layer, the way iOS draws
+             them — shift changes what gets typed, not what the key says. Doing
+             it here rather than with text-transform keeps it off "space",
+             "return", "123" and "ABC", which stay as written. */
+          b.textContent = kbLayer === "letters" ? spec.label.toUpperCase() : spec.label;
         } else {
           b.textContent = spec.label;
         }
