@@ -114,6 +114,38 @@ body{
   user-select:none;
 }
 
+/* Phone: the prototype IS the screen. No case, no stroke, no letterbox.
+   390 × 844 is a desktop convenience — a stand-in for a phone on a screen that
+   isn't one. On an actual device that box only gets in the way: its aspect
+   never quite matches the handset, so fitting it leaves bands of dead space
+   down the sides or across the top, and the 2px stroke reads as a border around
+   the app rather than the edge of a screen.
+   So below 800px the frame stops being a fixed box and becomes the viewport.
+   --scale is pinned to 1 by fitDevice() to match.
+   100dvh, not 100vh: mobile browsers keep reporting the *tallest* viewport for
+   100vh even while the URL bar is showing, which pushed the bottom nav below
+   the fold until you scrolled. dvh tracks the visible height as the bar moves.
+   The 100vh line before it is the fallback for anything without dvh. */
+@media (max-width:799px){
+  html,body{ height:100%; overflow:hidden; overscroll-behavior:none; }
+  body{ display:block; }
+  .frame{
+    width:100%;
+    height:100vh;
+    height:100dvh;
+    outline:none;
+    border-radius:0;
+  }
+  /* inset:0 rather than a width/height pair — the frame is the only thing that
+     knows the viewport's size now, and this inherits it without restating it. */
+  .device{
+    position:absolute; inset:0;
+    width:auto; height:auto;
+    transform:none;
+    border-radius:0;
+  }
+}
+
 /* Desktop: the window is wider than the phone needs, so spend the spare room
    on the case instead of leaving the screen floating in white. */
 @media (min-width:800px){
@@ -224,19 +256,23 @@ body{
    ============================================================ */
 /* One grid everywhere — sheet and full page share identical metrics so the
    expand animation doesn't re-lay-out its contents mid-motion.
-   28px gutters, 36px rows, 54px icons. The column width falls out of the
-   gutter rather than the other way round: the row still spans the full 342px
-   content area, so the outer tiles stay flush with the 24px screen margin —
-   (342 − 2×28) / 3 = 95.33px. Change the gutter and this number moves with it. */
+   28px gutters, 36px rows, 54px icons. The gutter is the designed number and
+   the column falls out of it, not the other way round — three equal columns
+   share whatever the 24px margins leave. At 390px that works out to the
+   original 95.33px ((342 − 2×28) / 3), and on a wider handset the columns grow
+   while the gutter stays 28px.
+   Don't pin the columns to 95.33px and reach for space-between instead: that
+   holds only at exactly 390px. On a 430px phone the leftover has nowhere to go
+   but the gutters, and they open up to 48px. */
 .grid{
   /* Its own stacking context, so the tiles' position:relative icons stay
      confined below the sticky strip instead of joining the positioned layer
      alongside it. */
   position:relative; z-index:0;
   display:grid;
-  padding:0 var(--spacing-6);                    /* 342px content area */
-  grid-template-columns:repeat(3,95.333px);
-  justify-content:space-between;
+  padding:0 var(--spacing-6);                    /* 342px content area at 390 */
+  grid-template-columns:repeat(3,1fr);
+  column-gap:28px;
   row-gap:var(--spacing-9);
 }
 
@@ -1818,7 +1854,15 @@ body{
      space. Everything measured off a rect must be divided by this. */
   /* Declared, not assigned to a const: syncSheetTop() needs it during the very
      first render, which runs earlier in this file. */
-  function deviceScale() { return device.getBoundingClientRect().width / 390; }
+  /* Below 800px the prototype runs fluid: no transform, and the device box is
+     the viewport rather than a scaled 390. Callers divide screen px by this to
+     get device px, so measuring width/390 here would silently scale every drag
+     threshold and every measured rect by the handset's width ratio — on a 430px
+     phone, by 1.10. There is no transform in that mode, so the answer is 1. */
+  function isFluid() { return window.innerWidth < 800; }
+  function deviceScale() {
+    return isFluid() ? 1 : device.getBoundingClientRect().width / 390;
+  }
 
   function applyGeom(g) {
     searchField.style.left   = g.left   + "px";
@@ -1954,12 +1998,18 @@ body{
      edge to edge; above it, room is left for the case ring and its shadow —
      the same breakpoint the stylesheet uses to draw them. */
   function fitDevice() {
-    /* 4px on a phone leaves room for the 2px stroke on each side — an outline
-       draws outside its box, so a screen that filled the window exactly would
-       push its own stroke off-screen. */
-    const room = window.innerWidth >= 800 ? 48 : 4;
-    const byHeight = (window.innerHeight - room) / 844;
-    const byWidth  = (window.innerWidth  - room) / 390;
+    /* Below 800px there is nothing to fit: the frame is the viewport. Running
+       the maths anyway would re-introduce the letterboxing this mode exists to
+       remove — the fit keeps 390:844, and no handset has exactly that aspect,
+       so the leftover always shows up as padding on one axis. */
+    if (isFluid()) {
+      document.documentElement.style.setProperty("--scale", "1");
+      syncSheetTop();
+      return;
+    }
+    /* Room for the case ring and its shadow. */
+    const byHeight = (window.innerHeight - 48) / 844;
+    const byWidth  = (window.innerWidth  - 48) / 390;
     const scale = Math.max(0.3, Math.min(1, byHeight, byWidth));
     document.documentElement.style.setProperty("--scale", scale.toFixed(4));
     syncSheetTop();                          /* rects just changed size */
