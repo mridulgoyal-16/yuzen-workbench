@@ -124,8 +124,20 @@ sheet: rubber-banded upward (capped at 140px, damped to 55%), free downward.
 - Scrolling to the bottom leaves room for the floating pill
 
 The app bar lives *inside* the scroll, not in the fixed head, so the title
-scrolls away with the content. Only the status bar stays put — except in edit
-mode, where the bar pins itself (see below).
+scrolls away with the content — except in edit mode, where the bar pins itself
+(see below).
+
+The status bar changes sides depending on the viewport. On desktop it sits in
+`.page__head` and stays put, the way a real one would. On a phone
+`placeStatusBar()` moves it into the scroll so it leaves with the content: the
+handset already draws its own status bar directly above, and a pinned 9:41
+reads as a second one stacked under the real thing while holding 44px of a
+screen that has none to spare.
+
+That move is also why the drag-down-to-collapse gesture is delegated from the
+page and matches `.page__head, .statusbar` rather than being bound to the head.
+In fluid mode the head is empty and zero-height, so binding to it would leave
+the gesture with no target at all.
 
 ### Category chips
 

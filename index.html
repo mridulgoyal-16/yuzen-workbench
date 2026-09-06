@@ -1411,7 +1411,14 @@ body{
        afterwards doesn't bring the scroll back. Put it back by hand. */
     const keep = expandedScroll.scrollTop;
     catGrid.style.minHeight = "0px";
-    const port = 844 - pageHead.offsetHeight;
+    /* Measured off the device, not a hardcoded 844: the frame is the viewport
+       on a phone, so the old constant sized short categories for a screen the
+       handset doesn't have. Not expandedScroll.clientHeight either — this can
+       be called while the page is still animating its `top` from the sheet's
+       edge to 0, and the scroller's own height is mid-flight at that point.
+       The device box isn't. */
+    const port = device.getBoundingClientRect().height / deviceScale()
+               - pageHead.offsetHeight;
     const tail = parseFloat(getComputedStyle(expandedScroll).paddingBottom) || 0;
     const want = port - tabsWrap.offsetHeight - tail;
     if (want > catGrid.offsetHeight) catGrid.style.minHeight = Math.ceil(want) + "px";
@@ -1662,16 +1669,23 @@ body{
   window.addEventListener("pointerup", onUp);
   window.addEventListener("pointercancel", onUp);
 
-  /* Drag down on the expanded page header → collapse back to the sheet */
+  /* Drag down on the expanded page header → collapse back to the sheet.
+     Delegated from the page rather than bound to .page__head, because the
+     status bar doesn't always live there: on a phone it sits inside the scroll
+     so it can scroll away, which would leave a zero-height head and no target
+     for this gesture. Matching either element keeps the drag on the band the
+     user actually sees, in both modes. */
   (function collapseDrag() {
-    const head = pageExpanded.querySelector(".page__head");
     let start = null;
-    head.addEventListener("pointerdown", e => { start = e.clientY; });
-    head.addEventListener("pointerup", e => {
+    const onHeader = e => e.target.closest(".page__head, .statusbar");
+    pageExpanded.addEventListener("pointerdown", e => {
+      start = onHeader(e) ? e.clientY : null;
+    });
+    pageExpanded.addEventListener("pointerup", e => {
       if (start !== null && (e.clientY - start) / deviceScale() > 40) setView("sheet");
       start = null;
     });
-    head.addEventListener("pointercancel", () => { start = null; });
+    pageExpanded.addEventListener("pointercancel", () => { start = null; });
   })();
 
   /* ─────────────  SEARCH  ───────────── */
@@ -1997,6 +2011,24 @@ body{
      is clipped or stretched. Never scales past 1:1. Below 800px the screen runs
      edge to edge; above it, room is left for the case ring and its shadow —
      the same breakpoint the stylesheet uses to draw them. */
+  /* Where the expanded page's status bar lives.
+     On a phone the handset draws its own status bar directly above ours, so a
+     pinned 9:41 reads as a second one stacked under the real thing, and it
+     holds 44px of a screen that has none to spare. Inside the scroll it leaves
+     with the content. On desktop there is no real status bar to collide with,
+     so it stays in .page__head where the design put it.
+     Only the expanded page moves. The search page's head is part of the pill →
+     field morph and has its own transitions; the tasks screen is a backdrop. */
+  function placeStatusBar() {
+    const bar = pageExpanded.querySelector(".statusbar");
+    const target = isFluid() ? expandedScroll : pageHead;
+    if (bar.parentElement === target) return;
+    target.insertBefore(bar, target.firstChild);
+    /* Both the scroll port and the content above the strip just changed, and
+       the short-category padding is derived from them. */
+    if (catGrid.children.length) padCatGrid();
+  }
+
   function fitDevice() {
     /* Below 800px there is nothing to fit: the frame is the viewport. Running
        the maths anyway would re-introduce the letterboxing this mode exists to
@@ -2004,9 +2036,11 @@ body{
        so the leftover always shows up as padding on one axis. */
     if (isFluid()) {
       document.documentElement.style.setProperty("--scale", "1");
+      placeStatusBar();
       syncSheetTop();
       return;
     }
+    placeStatusBar();
     /* Room for the case ring and its shadow. */
     const byHeight = (window.innerHeight - 48) / 844;
     const byWidth  = (window.innerWidth  - 48) / 390;

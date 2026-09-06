@@ -124,6 +124,14 @@ Two things follow from this and are easy to get wrong:
   the full viewport that would return 1.10 on a 430px phone — silently scaling
   every drag threshold and measured rect by the handset's width ratio. There is
   no transform in that mode, so the answer is 1.
+- **Nothing may assume a height of 844.** `padCatGrid()` did, and sized the
+  short categories for a screen the handset doesn't have. It measures the
+  device box instead — not the scroll container, which is mid-flight while the
+  expanded page animates its `top` from the sheet's edge to 0.
+
+The expanded page's status bar also swaps sides here: pinned in `.page__head`
+on desktop, moved into the scroll on a phone so it scrolls away. See
+[interactions.md](interactions.md#expanded-page).
 
 ## Action grid
 
