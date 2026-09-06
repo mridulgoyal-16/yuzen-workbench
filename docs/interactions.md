@@ -55,9 +55,12 @@ Everything Workbench-y lives inside the sheet, in this order:
 3. The favourites themselves
 4. **Search** pill
 
-The heading is the same component the expanded page uses, at the same size, so
-the sheet reads as the top of that page rather than a different screen. It
-carries no pencil — editing belongs to the expanded page.
+The sheet is the one place the word "Favourites" still appears. The expanded
+page dropped its heading — its app-bar title already says Workbench, and a
+second label directly under it read as a stutter — but the sheet has no title
+of its own, so without the heading its six icons would sit in an unlabelled
+tray. The heading carries no affordance of its own: editing is reached from
+the expanded page's kebab, or by tapping a dashed **+** slot.
 
 **Sized by its content**, capped at 618px. Fixed chrome is 240px — 36px above
 the arrow, the 14px arrow, 36px from the arrow down to "Favourites", the rest
@@ -109,18 +112,34 @@ sheet: rubber-banded upward (capped at 140px, damped to 55%), free downward.
 
 ## Expanded page
 
-- **Favourites** section — up to nine tiles, with a pencil action in the header
-- Page title **Workbench** — label/medium600 (Satoshi Bold 16/20) in
-  `content/primary`, carried through to the search screen so the header
-  doesn't shift
-- **Categories** — a sticky tab strip (Bike · Battery · IoT · Workflow), then
+- App bar — the title **Workbench** in label/medium600 (Satoshi Bold 16/20),
+  `content/primary`, with a **kebab** at the trailing edge. The title is
+  carried through to the search screen so the header doesn't shift
+- **Favourites** — up to nine tiles, directly under the title, no heading of
+  their own
+- **Categories** — a sticky chip strip (Bike · Battery · IoT · Workflow), then
   that category's actions
-- 24px between a section heading and its content; 36px between rows
+- 36px from the title to the favourites, 36px from the favourites to the chips,
+  24px from the chips to the actions, 36px between rows
 - Scrolling to the bottom leaves room for the floating pill
 
-Every tab shows its 32 × 32 icon, selected or not; selection reads from the
-underline and the darker label. Four tabs with icons overflow the 390px screen,
-so the strip scrolls horizontally and selecting a tab scrolls it into view.
+The app bar lives *inside* the scroll, not in the fixed head, so the title
+scrolls away with the content. Only the status bar stays put — except in edit
+mode, where the bar pins itself (see below).
+
+### Category chips
+
+Chips, not underlined tabs. Each is 48px tall with 16px of padding, 12px
+between them, 24px from the screen edge, fully rounded. Every chip carries its
+own 24px icon. Selected fills with `content/primary` and flips the label to
+`content/inverse`; unselected is white inside a `border/primary` hairline.
+
+Four chips with icons overflow the 390px screen, so the strip scrolls
+horizontally and selecting one brings it into view. There is **no trailing
+fade**. One used to sit at the right edge as a scroll cue, but with only four
+chips the one it washed out was Workflow — the cue cost more than it bought.
+The strip is opaque instead, so content scrolls cleanly beneath it while
+pinned.
 
 ### Keeping the strip pinned
 
@@ -167,19 +186,35 @@ keyboard rides up underneath. Closing runs the same move backwards.
 - Coded iOS keyboard: letters, numbers, symbols, shift, backspace, done
 - Results filter live on every keystroke
 - Matching is on an action's **full name**, so typing `bike` finds the Bike
-  actions even though their tab labels drop the word
+  actions even though their chip-layer labels drop the word
 - Up to 12 results; an empty query shows six recommended actions
 - A **✕** inside the field clears the query without leaving search
 - No matches shows `No actions match "…"`
+
+The keys draw their letters in **uppercase**, the way iOS does, at 25px in a
+33 × 42 cap. Shift governs what gets *typed*, not what the key says, so the
+caps don't change case under your finger mid-word. The uppercasing is done in
+`renderKeyboard()` rather than with `text-transform` so it stays off "space",
+"return", "123" and "ABC", and off the punctuation layers.
+
+**Set the key type with longhands, never the `font` shorthand.** `font: 400
+25px/1 inherit` is invalid CSS — the shorthand ends in a font-family and
+`inherit` isn't one — so the browser discards the whole declaration and every
+cap silently falls back to the 13.33px default a `<button>` gets. That bug sat
+in the file unnoticed for a long time: the stylesheet said 22px and the
+keyboard rendered at 13.33px. The same shorthand was shrinking the **Done**
+button.
 
 The empty field reads **Search**, in `content/disabled` (#B0B0B0). Its magnifier
 is `content/primary`, matching the floating pill's — the pill morphs into this
 field, so an icon that changed shade mid-flight reads as two different icons.
 
-**Recommended** occupies the same box as **Favourites** on the expanded page —
-48px tall, same padding, same label/medium type, and the grid below it carries
-the same 24px `gap-head`. Both the label and the first tile land on identical
-pixels, so nothing jumps when search takes over the screen.
+**Recommended** occupies the same box as the expanded page's first row — 48px
+tall, same padding, same label/medium type, and the grid below it carries the
+same 24px `gap-head`. Now that the expanded page has no "Favourites" heading,
+"Recommended" no longer has a counterpart label to align to; it aligns to the
+grid instead, so the first tile still lands on identical pixels and nothing
+jumps when search takes over the screen.
 
 ### Results
 
@@ -211,15 +246,66 @@ Two consequences the code handles explicitly:
 
 Lives on the expanded page only; leaving that page exits it.
 
-- Enter via the pencil in the Favourites header, or by tapping a dashed **+**
-  slot (from the sheet, that jumps to the expanded page and opens edit mode)
-- The pencil becomes a **tick**. Both are 24px icons in the same 48px slot, so
-  the header doesn't reflow on the swap the way a text button made it
+### Getting in
+
+- Tap the **kebab** in the app bar → a menu with one item, **Edit favourites**
+- Or tap a dashed **+** slot (from the sheet, that jumps to the expanded page
+  and opens edit mode directly)
+
+The menu sits at device level, above the nav, so its scrim can cover the whole
+screen. The bar scrolls, so the kebab isn't at a fixed spot — the menu's
+position is measured from the button each time it opens rather than inherited.
+It's one item today; the shape is there for more.
+
+### While editing
+
+- The title changes to **Edit favourites** and steps back to
+  `content/secondary`
+- The kebab is replaced by **Done** — a tick plus the word
+- The app bar **pins** itself (`position: sticky`), so Done stays reachable
+  however far you've scrolled. Out of edit mode the bar scrolls away normally
 - All tiles wiggle, iOS-style
 - Each favourite gets a **−** badge; tapping removes it
 - Each catalogue action gets a **+** badge; tapping adds it to favourites
 
-Guard rails, each with a toast:
+### Getting out
+
+**Done is the only way out.** Tapping the background does nothing, tapping a
+category chip does nothing but change category, and neither is a mistake you
+can make by accident.
+
+Tapping the background used to exit too, and it took chip taps with it:
+selecting a category rebuilds the strip, so by the time the click bubbled up to
+the page handler `e.target` was detached from the document, `closest()` returned
+`null`, and the tap was classified as background. Rather than patch the
+detachment, the second exit was removed. The page-level handler now only closes
+an open menu.
+
+Leaving the expanded page altogether still exits edit mode — that's a view
+change, not a click.
+
+### The wiggle
+
+Every tile peaks at **1.1°**, in every category. Amplitude is uniform on
+purpose; if the wiggle ever needs calming, change it there and it changes
+everywhere.
+
+Periods are staggered — .33s base, .35s on even tiles with a −.09s delay, .31s
+on every third — so a grid full of tiles reads as shimmer rather than as one
+synchronised motion.
+
+**Don't put the shortest period back on the base rule.** IoT holds one action
+and Workflow two, so the base rule is the *only* rule those grids exercise. A
+lone tile running the quickest wiggle, with nothing else moving on screen to
+average it into noise, reads as a much larger amplitude than it is — and two
+tiles were worse, because `tile-wiggle-a` and `-b` are exact antiphase and the
+pair scissored in lockstep. The delay on the even tiles is what breaks that.
+
+`prefers-reduced-motion` drops the animation entirely.
+
+### Guard rails
+
+Each with a toast:
 
 | Situation | Toast |
 |---|---|
@@ -235,15 +321,20 @@ drawn in SVG so the dash length is controllable. Counts of 1, 2, 4, 5, 7 and 8
 leave a gap; 3, 6 and 9 are complete rows and get none. Zero favourites shows a
 full empty row.
 
+The slot stays a 90px square while its grid column is wider — 95.33px at 390px,
+more on a larger phone — so it carries `justify-self: center`. A fixed-width
+grid item doesn't stretch, and without this it sits at the column's start edge,
+out of line with the icons above it.
+
 ## Use cases
 
 | Goal | Path |
 |---|---|
 | Run a frequent action | Workbench → tap it in the sheet |
 | Find an action you don't have saved | Workbench → Search → type → tap the result |
-| Browse everything in a category | Workbench → arrow → tab |
-| Save an action for later | Expanded → pencil → **+** on the action |
-| Clear out a stale favourite | Expanded → pencil → **−** on the favourite |
+| Browse everything in a category | Workbench → arrow → chip |
+| Save an action for later | Expanded → kebab → Edit favourites → **+** on the action → Done |
+| Clear out a stale favourite | Expanded → kebab → Edit favourites → **−** on the favourite → Done |
 | Fill an empty slot | Sheet → tap the dashed **+** → lands in edit mode |
 | Back out of search without losing your place | **✕** — see the table above |
 

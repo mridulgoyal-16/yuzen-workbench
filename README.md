@@ -6,8 +6,9 @@ sheet, expand, search with a real keyboard, and favourites editing.
 
 **▶ [Open the prototype](https://mridulgoyal-16.github.io/yuzen-workbench/)**
 
-Runs in any modern browser, desktop or mobile. The phone frame scales to fit the
-window, so it's fully usable on a laptop.
+Runs in any modern browser, desktop or mobile. On a laptop it draws a 390 × 844
+phone in a case, scaled to fit the window. On a phone it drops the case and runs
+edge to edge, filling the device — no letterboxing, no frame around the app.
 
 ---
 
@@ -16,7 +17,7 @@ window, so it's fully usable on a laptop.
 | Path | What it is |
 |---|---|
 | `index.html` | The entire prototype — markup, tokens, styles, and logic |
-| `assets/` | Flat PNGs: tab icons, nav icons, cancel glyphs |
+| `assets/` | Flat PNGs: nav icons and cancel glyphs (category chip icons are inline SVG) |
 | `3d icons/` | Action art, one folder per category (`bike`, `battery`, `IOT`, `workflow`) |
 | `Icon style/yulu-icon-style_final.json` | Icon style definition |
 | `docs/` | Interaction spec, icon system, design-system mapping |
@@ -55,9 +56,9 @@ Four views, one continuous white surface:
 **Sheet** — favourites only, sized to its content. Five favourites make a
 shorter sheet than nine; there's never dead space under the last row.
 
-**Expanded** — favourites plus the full catalogue under category tabs. The sheet
-doesn't cross-fade to a new page; it grows into one, so the surface and its
-corner radius stay continuous.
+**Expanded** — favourites plus the full catalogue under a strip of category
+chips. The sheet doesn't cross-fade to a new page; it grows into one, so the
+surface and its corner radius stay continuous.
 
 **Search** — the floating Search pill *becomes* the search field. Same surface,
 one move, keyboard rides up underneath.
@@ -68,7 +69,8 @@ one move, keyboard rides up underneath.
 
 - Floating pill, always within reach above the bottom nav
 - Tapping it morphs the pill into the search field (iOS Spotlight-style)
-- A coded iOS keyboard — letters, numbers, symbols, shift, backspace
+- A coded iOS keyboard — letters, numbers, symbols, shift, backspace — with
+  uppercase key caps, the way iOS draws them
 - Results filter live as you type
 - Results always use an action's **full name** and its `_common` icon, so two
   actions called "Status" stay distinguishable
@@ -80,17 +82,21 @@ one move, keyboard rides up underneath.
 
 - Up to nine favourites, three per row
 - A partial row is padded with dashed **+** slots; tapping one opens edit mode
-- Edit mode (pencil → Done) wiggles the tiles iOS-style, puts a **−** on each
-  favourite and a **+** on each catalogue action
+- Otherwise edit mode is reached from the app bar's **kebab → Edit favourites**
+- Editing wiggles the tiles iOS-style, puts a **−** on each favourite and a
+  **+** on each catalogue action
+- **Done is the only way out** — background taps and chip taps don't exit, so
+  there's no ambiguity about which taps are safe while editing
 - Actions already favourited, and every action once you hit nine, say so via
   toast instead of silently doing nothing
 
 ### Categories
 
-Bike, Battery, IOT, Workflow. Inside a tab the category is implied, so labels
-drop the qualifier ("Status"); out in favourites and search they revert to the
-full name ("Bike status"). Same switch changes the icon from `_tab` to
-`_common` art. Full rules in [docs/icons.md](docs/icons.md).
+Bike, Battery, IoT, Workflow, as a scrolling strip of chips. Inside a category
+the category is implied, so labels drop the qualifier ("Status"); out in
+favourites and search they revert to the full name ("Bike status"). Same switch
+changes the icon from `_tab` to `_common` art. Full rules in
+[docs/icons.md](docs/icons.md).
 
 ---
 

@@ -7,20 +7,28 @@
   bike/       battery/      IOT/      workflow/
 ```
 
-One folder per category. Every file is a 54 × 54 PNG.
+One folder per category. Every file is a 54 × 54 PNG. These are the **action**
+icons — the 3D art on the tiles.
 
-`assets/` holds the flat 2D art: category tab icons (`bike.png`, `battery.png`,
-`IOT.png`), bottom-nav mask icons, and the cancel glyphs.
-
-Every tab in the category strip shows its icon at 32 × 32, selected or not —
-selection is carried by the underline and the darker label.
-
-`assets/workflow.svg` is a **placeholder**: a monochrome glyph, not the flat 3D
-style of the other three. Swap the path in `CATEGORIES` when the real export
-lands. A tab whose art is missing drops its `<img>` on load error and renders as
-a plain text tab rather than showing a broken-image glyph.
+`assets/` holds the flat 2D art: bottom-nav mask icons and the cancel glyphs.
 
 `Icon style/yulu-icon-style_final.json` holds the icon style definition.
+
+## Category chip glyphs
+
+The four category chips do **not** use files. Their icons are inline 24 × 24
+SVGs held in `CAT_GLYPH` in `index.html`, drawn with `fill: currentColor` so a
+chip's icon inverts with its label when the chip is selected — a PNG can't do
+that without a second asset or a mask.
+
+That replaced an earlier arrangement of 32 × 32 PNG tab icons
+(`assets/bike.png`, `battery.png`, `IOT.png`) plus `assets/workflow.svg`, which
+was a monochrome placeholder that never matched the other three. **All four of
+those files are now unreferenced** and can be deleted; they're left in place
+only because nothing depends on their absence.
+
+To change a chip's icon, replace the SVG path in `CAT_GLYPH`. Keep the
+`class="tab__icon"`, the 24 × 24 viewBox, and `fill="currentColor"`.
 
 ## `_tab` and `_common`
 
@@ -28,8 +36,11 @@ Each action can have two variants:
 
 | Suffix | Used where |
 |---|---|
-| `_tab` | Inside a category tab |
+| `_tab` | In a category's action grid |
 | `_common` | Favourites, search results |
+
+(The `_tab` name predates the switch from tabs to chips. It's the filename
+suffix on disk, so it stays as it is.)
 
 If only one file exists it serves both places. Most actions ship `_common` only;
 `_tab` art exists where the two contexts want visibly different treatment.
@@ -45,12 +56,12 @@ Every action has two strings, and they are deliberately different:
 
 The rule:
 
-> Inside a category tab the category is implied, so the label drops the
-> qualifier. In favourites and in search there is no category context, so the
-> action reverts to its full id — and the icon switches from `_tab` to `_common`
-> on the same flag.
+> Inside a category the category is implied, so the label drops the qualifier.
+> In favourites and in search there is no category context, so the action
+> reverts to its full id — and the icon switches from `_tab` to `_common` on
+> the same flag.
 
-| id | In the Bike tab | In favourites / search |
+| id | In the Bike category | In favourites / search |
 |---|---|---|
 | `bike status` | Status | Bike status |
 | `report bike` | Report | Report bike |
@@ -108,8 +119,8 @@ lopsided.
    action, adding `_common` (and `_tab` if the tab needs different art).
 2. Add the id to that category's `actions` array in `index.html`.
 3. Add an `ART` entry pointing at the file(s).
-4. If the tab should show a shorter label, add a `LABEL[id]` entry. Skip it and
-   the full id is used in both places.
+4. If the category grid should show a shorter label, add a `LABEL[id]` entry.
+   Skip it and the full id is used in both places.
 
 Two rules to keep:
 
