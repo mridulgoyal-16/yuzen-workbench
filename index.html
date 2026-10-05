@@ -405,6 +405,15 @@ body{
   border-color:var(--content-primary);
   color:var(--content-inverse);
 }
+/* The Tasks screen's status chips carry their selected state with a grey ground
+   inside a border/selected hairline instead of inverting. Scoped to that screen
+   on purpose: the Workbench category chips keep the filled state the design
+   system specifies for them, and the two strips never appear together. */
+.tasks__tabs .tab[aria-selected="true"]{
+  background:var(--surface-secondary);
+  border-color:var(--border-selected);
+  color:var(--content-primary);
+}
 
 /* ============================================================
    FLOATING SEARCH  (persistent, sits above the bottom nav)
@@ -486,8 +495,51 @@ body{
   font-family:var(--font); font-size:12px; line-height:16px; font-weight:500;
   color:var(--content-tertiary);              /* unselected nav — per design call */
 }
+.navitem{ position:relative; }                /* positioning context for the tap hint */
 .navitem .icon-mask{ width:24px; height:24px; }
 .navitem[aria-current="page"]{ color:var(--content-primary); font-weight:700; }
+
+/* ---- Tap hint (prototype affordance, not app UI) ----
+   The prototype opens on Tasks, which is a static backdrop — nothing on it
+   tells a first-time viewer that the way in is the Workbench tab. A pointer
+   taps the tab on a loop until they do.
+   It lives inside the nav button rather than at device level, so it needs no
+   measuring: the button is its positioning context and the hint stays on the
+   tab at any width. `inset:0` with `position:absolute` also keeps it out of
+   the button's flex column, so it can't shift the icon or the label. */
+.taphint{ position:absolute; inset:0; z-index:1; pointer-events:none; }
+
+.taphint__ring{
+  position:absolute; left:50%; top:-2px; margin-left:-14px;
+  width:28px; height:28px;
+  border:2px solid var(--content-primary); border-radius:50%;
+  opacity:0;
+  animation:hint-ring 2.4s var(--ease) infinite;
+}
+
+/* Sits above the nav, over the Tasks screenshot. Nothing else is up there on
+   this screen — the floating Search pill only exists once the sheet is open. */
+.taphint__label{
+  position:absolute; left:50%; bottom:calc(100% + 20px); transform:translateX(-50%);
+  padding:8px 12px; border-radius:10px;
+  background:var(--surface-primary); color:var(--content-inverse);
+  font-size:12px; line-height:16px; font-weight:700; white-space:nowrap;
+}
+.taphint__label::after{                        /* caret, pointing at the tab */
+  content:""; position:absolute; left:50%; bottom:-3px; margin-left:-4px;
+  width:8px; height:8px; border-radius:1px;
+  background:var(--surface-primary); transform:rotate(45deg);
+}
+
+/* One ripple, then a pause — a tap repeating, not a throbbing target. */
+@keyframes hint-ring{
+  0%,12%  { transform:scale(.5); opacity:0; }
+  22%     { opacity:.9; }
+  45%,100%{ transform:scale(1.5); opacity:0; }
+}
+@media (prefers-reduced-motion:reduce){
+  .taphint__ring{ animation:none; opacity:.9; transform:scale(1.1); }
+}
 
 /* ============================================================
    LAYERS
@@ -1008,6 +1060,12 @@ body{
     </button>
     <button class="navitem" data-nav="workbench" aria-current="page">
       <span class="icon-mask" style="-webkit-mask-image:url('assets/worbench.png');mask-image:url('assets/worbench.png')"></span>Workbench
+      <!-- Hidden from assistive tech: it's a pointer for someone looking at a
+           link, and the button already announces itself. -->
+      <span class="taphint" id="tapHint" aria-hidden="true">
+        <span class="taphint__label">Tap Workbench</span>
+        <span class="taphint__ring"></span>
+      </span>
     </button>
     <button class="navitem" data-nav="profile">
       <span class="icon-mask" style="-webkit-mask-image:url('assets/profile.png');mask-image:url('assets/profile.png')"></span>Profile
@@ -1165,6 +1223,7 @@ body{
   const searchFab     = $("searchFab");
   const btnSearch     = $("btnSearch");
   const bottomNav     = $("bottomNav");
+  const tapHint       = $("tapHint");
   const toastEl       = $("toast");
   const taskList      = $("taskList");
 
@@ -1578,6 +1637,12 @@ body{
   // 'tasks' | 'sheet' | 'expanded' | 'search'
   let view = "tasks";
 
+  /* The hint is a prompt for someone who has just opened the link, so it shows
+     on the opening screen and is spent the moment the tab is used. Coming back
+     to Tasks later doesn't bring it back — by then they know the way in. */
+  let hintSpent = false;
+  function syncHint() { tapHint.hidden = hintSpent || view !== "tasks"; }
+
   function setView(next) {
     view = next;
 
@@ -1601,6 +1666,8 @@ body{
        would start 72px too low. */
     syncSheetTop();
     syncFabLanded();
+
+    syncHint();
 
     const activeNav = next === "tasks" ? "tasks" : "workbench";
     document.querySelectorAll(".navitem").forEach(n => {
@@ -1978,7 +2045,7 @@ body{
     const btn = e.target.closest(".navitem");
     if (!btn) return;
     const dest = btn.dataset.nav;
-    if (dest === "workbench") setView(view === "tasks" ? "sheet" : "tasks");
+    if (dest === "workbench") { hintSpent = true; setView(view === "tasks" ? "sheet" : "tasks"); }
     else if (dest === "tasks") setView("tasks");
     else toast(`${btn.textContent.trim()} — not in this flow`);
   });

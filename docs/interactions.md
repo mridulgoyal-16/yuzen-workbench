@@ -31,6 +31,31 @@ screen for the whole time the keyboard was sliding away.
 
 The Search pill shows only in `sheet` and `expanded`.
 
+## Opening screen
+
+The prototype opens on Tasks, which is a backdrop — none of it is wired up, so
+nothing on it tells someone who has just been sent the link where to go. A
+**tap hint** marks the way in: a ripple on the Workbench tab's icon and a
+`Tap Workbench` pill above it.
+
+It shows only on Tasks and is spent the moment the tab is used — coming back to
+Tasks later doesn't bring it back, since by then the viewer knows the way in.
+It lives inside the nav button rather than at device level, which is what keeps
+it on the tab at any width with nothing measured; `position: absolute` with
+`inset: 0` also keeps it out of the button's flex column, so it can't nudge the
+icon or the label.
+
+One constraint worth knowing before changing its size: the home indicator is at
+device level on `z-index: 90` and the hint is inside the nav on `z-index: 50`,
+so anything in the hint that reaches the indicator's band gets a black bar drawn
+straight through it. That is why the hint sits above the tab rather than below.
+
+The Tasks status chips (`Revive • 2`, `Assessment • 14`, …) show their selected
+state as a grey ground inside a `border/selected` hairline. That treatment is
+scoped to this screen — the Workbench [category chips](#category-chips) keep the
+filled state the design system gives them, and the two strips never appear
+together.
+
 ## Collapsed screen
 
 Four bands, bottom-anchored, nothing below the last one:

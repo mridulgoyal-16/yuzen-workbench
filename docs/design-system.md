@@ -177,6 +177,11 @@ Chips, not underlined tabs.
 The strip scrolls horizontally and carries no trailing fade or underline — it's
 opaque, so pinned content scrolls cleanly beneath it.
 
+The Tasks screen reuses the same chip, but its selected state is a
+`surface/secondary` ground inside a `border/selected` hairline, label left in
+`content/primary`. Scoped to that screen with `.tasks__tabs`: the two strips
+never appear together, so they don't have to agree.
+
 ## Notes for implementers
 
 Two things worth knowing before porting this to Compose or SwiftUI:
